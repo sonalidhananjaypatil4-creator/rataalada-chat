@@ -1,0 +1,2836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>rataalada-chat // encrypted terminal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="https://unpkg.com/mqtt@5.3.4/dist/mqtt.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --phosphor: #00ff41;
+      --phosphor-dim: #008f11;
+      --phosphor-dark: #002b07;
+      --bg-void: #020602;
+    }
+
+    * {
+      box-sizing: border-box;
+      scrollbar-width: thin;
+      scrollbar-color: var(--phosphor-dim) var(--bg-void);
+    }
+
+    body {
+      background-color: var(--bg-void);
+      color: var(--phosphor);
+      font-family: 'Share Tech Mono', monospace;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      text-shadow: 0 0 6px rgba(0, 255, 65, 0.45);
+    }
+
+    .crt-scanlines {
+      background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%,
+        rgba(0, 0, 0, 0.42) 50%
+      ),
+      linear-gradient(
+        90deg,
+        rgba(255, 0, 0, 0.03),
+        rgba(0, 255, 0, 0.01),
+        rgba(0, 0, 255, 0.03)
+      );
+      background-size: 100% 3px, 6px 100%;
+      pointer-events: none;
+    }
+
+    .crt-vignette {
+      box-shadow: inset 0 0 90px rgba(0, 0, 0, 0.85), inset 0 0 25px rgba(0, 255, 65, 0.12);
+      pointer-events: none;
+    }
+
+    @keyframes flicker {
+      0% { opacity: 0.985; }
+      50% { opacity: 1; }
+      52% { opacity: 0.96; }
+      54% { opacity: 1; }
+      100% { opacity: 0.99; }
+    }
+
+    .crt-flicker {
+      animation: flicker 4s infinite;
+    }
+
+    .subtle-border {
+      border-color: rgba(0, 255, 65, 0.28);
+    }
+
+    .glow-box {
+      box-shadow: 0 0 15px rgba(0, 255, 65, 0.15), inset 0 0 10px rgba(0, 255, 65, 0.06);
+    }
+
+    .operator-glow {
+      box-shadow: 0 0 18px rgba(255, 215, 0, 0.35), inset 0 0 10px rgba(255, 215, 0, 0.12);
+      border-color: #ffd700 !important;
+      color: #ffd700 !important;
+    }
+
+    .riddler-q {
+      font-family: 'VT323', monospace;
+      text-shadow: 0 0 12px rgba(0, 255, 65, 0.8);
+    }
+
+    input::placeholder {
+      color: rgba(0, 255, 65, 0.35);
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #010501;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #005518;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #00ff41;
+    }
+  </style>
+</head>
+<body class="h-screen w-screen flex flex-col select-text crt-flicker" id="terminal-body">
+
+  <!-- CRT Visual Overlays -->
+  <div class="fixed inset-0 crt-scanlines z-40"></div>
+  <div class="fixed inset-0 crt-vignette z-40"></div>
+
+  <!-- Emergency Red Broadcast Banner (Owner Only Trigger) -->
+  <div id="broadcast-banner" class="hidden bg-red-950/90 border-b-2 border-red-500 text-red-200 px-4 py-2 text-xs sm:text-sm font-bold flex items-center justify-between z-30 shrink-0 animate-pulse">
+    <div class="flex items-center space-x-2">
+      <span class="text-red-500 text-lg">⚠️</span>
+      <span id="broadcast-text" class="tracking-widest uppercase">EMERGENCY SYSTEM BROADCAST ALERT</span>
+    </div>
+    <button onclick="dismissBroadcast()" class="text-red-400 hover:text-white px-2 py-0.5 border border-red-500 rounded text-xs">DISMISS</button>
+  </div>
+
+  <!-- Owner-Only Exclusive Control Bar (Hidden Unless Unlocked) -->
+  <div id="owner-control-bar" class="hidden bg-[#141200] border-b-2 border-[#ffd700] px-3 sm:px-5 py-2 flex flex-wrap items-center justify-between text-xs gap-2 z-25 shrink-0">
+    <div class="flex items-center space-x-2">
+      <span class="px-2 py-0.5 rounded bg-yellow-950/80 border border-[#ffd700] text-[#ffd700] font-bold tracking-widest text-[11px]">★ OPERATOR // OWNER MODE ACTIVE</span>
+    </div>
+    <div class="flex items-center flex-wrap gap-1.5">
+      <button onclick="ownerActionLock()" class="px-2 py-0.5 rounded border border-yellow-500 bg-yellow-950/40 text-yellow-300 hover:bg-yellow-400 hover:text-black font-bold transition">
+        🔒 LOCK FREQ
+      </button>
+      <button onclick="ownerActionUnlock()" class="px-2 py-0.5 rounded border border-yellow-500 bg-yellow-950/40 text-yellow-300 hover:bg-yellow-400 hover:text-black font-bold transition">
+        🔓 UNLOCK
+      </button>
+      <button onclick="ownerActionGlobalBurn()" class="px-2 py-0.5 rounded border border-red-500 bg-red-950/50 text-red-400 hover:bg-red-600 hover:text-black font-bold transition">
+        🔥 GLOBAL BURN
+      </button>
+      <button onclick="openBroadcastModal()" class="px-2 py-0.5 rounded border border-yellow-500 bg-yellow-950/40 text-yellow-300 hover:bg-yellow-400 hover:text-black font-bold transition">
+        📢 BROADCAST
+      </button>
+      <button onclick="ownerDeop()" class="px-2 py-0.5 rounded border border-neutral-600 bg-neutral-900 text-neutral-300 hover:bg-neutral-800 transition">
+        DEOP
+      </button>
+    </div>
+  </div>
+
+  <!-- Top Terminal Header Bar -->
+  <header class="border-b subtle-border bg-[#030d05]/95 px-3 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-2 z-20 shrink-0">
+    <div class="flex items-center space-x-3">
+      <div onclick="openOpAuthModal()" title="Operator Terminal Access" class="cursor-pointer w-8 h-8 rounded border border-[#00ff41] flex items-center justify-center bg-[#00240b] glow-box hover:border-yellow-400 transition">
+        <span class="riddler-q text-2xl font-bold leading-none select-none">?</span>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <h1 class="text-sm sm:text-base font-bold tracking-widest uppercase">RATAALADA-CHAT</h1>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-[#00290d] border border-[#00ff41]/40 text-[#00ff41]">MESH_v4.7</span>
+        </div>
+        <p class="text-[11px] text-emerald-500/80 tracking-wider hidden sm:block">CROSS-DEVICE P2P ENCRYPTED TERMINAL</p>
+      </div>
+    </div>
+
+    <!-- Live Connection Status & Controls -->
+    <div class="flex items-center flex-wrap gap-2">
+      <div id="conn-badge" onclick="sendPingTest()" title="Click to ping connected peer(s)" class="cursor-pointer flex items-center space-x-2 px-2.5 py-1 rounded border border-amber-500/50 bg-amber-950/30 text-amber-400 text-xs transition">
+        <span id="conn-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+        <span id="conn-text">INITIALIZING MESH...</span>
+      </div>
+
+      <button onclick="sendPingTest()" title="Test cross-device connection speed" class="text-xs px-2.5 py-1 rounded border subtle-border bg-[#001a07] hover:bg-[#003311] transition">
+        PING
+      </button>
+
+      <button id="bot-btn" onclick="toggleRiddlerBot()" title="Toggle Riddler AI Responder for solo testing" class="text-xs px-2.5 py-1 rounded border subtle-border bg-[#001a07] hover:bg-[#003311] transition">
+        BOT: <span id="bot-label" class="font-bold">AUTO</span>
+      </button>
+
+      <button id="audio-btn" onclick="toggleAudio()" title="Toggle CRT & Mechanical Key Sounds" class="text-xs px-2.5 py-1 rounded border subtle-border bg-[#001a07] hover:bg-[#003311] transition">
+        <span id="audio-label">SFX: ON</span>
+      </button>
+
+      <button onclick="openShareModal()" class="text-xs px-3 py-1 rounded border border-[#00ff41] bg-[#003812] hover:bg-[#00ff41] hover:text-black font-bold tracking-wider transition glow-box">
+        + INVITE DEVICE
+      </button>
+    </div>
+  </header>
+
+  <!-- Subheader: Room Frequency & Persona Controls -->
+  <div class="px-3 sm:px-5 py-2 border-b subtle-border bg-[#010903]/90 flex flex-wrap items-center justify-between text-xs gap-2 z-20 shrink-0">
+    <div class="flex items-center flex-wrap gap-1.5 sm:gap-2">
+      <span class="text-emerald-500 font-bold tracking-wider">FREQ-CODE:</span>
+      <code id="room-display-id" class="text-[#00ff41] font-bold bg-[#00220c] px-2.5 py-0.5 rounded border border-[#00ff41]/50 tracking-widest text-sm">------</code>
+
+      <button onclick="copyFreqCode()" class="text-[11px] border subtle-border px-2 py-0.5 rounded hover:bg-[#003816] text-[#00ff41] transition">
+        COPY CODE
+      </button>
+
+      <button onclick="copyInviteLink()" class="text-[11px] border subtle-border px-2 py-0.5 rounded hover:bg-[#003816] text-[#00ff41] transition">
+        COPY URL
+      </button>
+
+      <button onclick="openJoinModal()" class="text-[11px] border border-emerald-400/70 bg-[#002b0f] px-2.5 py-0.5 rounded hover:bg-[#00ff41] hover:text-black font-semibold transition">
+        JOIN FRIEND'S CODE
+      </button>
+    </div>
+
+    <div class="flex items-center flex-wrap gap-1.5 sm:gap-2">
+      <button onclick="openUsernameModal(false)" title="Click to change your saved username anytime" class="text-[11px] border border-[#00ff41]/70 px-2.5 py-0.5 rounded bg-[#00220c] hover:bg-[#00ff41] hover:text-black transition flex items-center space-x-1">
+        <span>ID:</span>
+        <span id="handle-display" class="font-bold underline">[ANON_01]</span>
+        <span class="text-[10px] opacity-80">✎</span>
+      </button>
+
+      <button onclick="openOpAuthModal()" title="Owner Authentication (Masked Input)" class="text-[11px] border border-yellow-600/50 text-yellow-400 px-2 py-0.5 rounded bg-yellow-950/20 hover:bg-yellow-500 hover:text-black font-bold transition">
+        ★ OP
+      </button>
+
+      <button id="cipher-toggle-btn" onclick="toggleCipherMode()" title="Encrypt outgoing messages into geometric cipher glyphs" class="text-[11px] border subtle-border px-2 py-0.5 rounded bg-[#001806] hover:bg-[#003010] transition">
+        CIPHER: <span id="cipher-state">OFF</span>
+      </button>
+
+      <button onclick="burnSession()" title="Wipe terminal history on your screen (or all screens if Operator)" class="text-[11px] border border-red-600/60 text-red-400 px-2 py-0.5 rounded bg-red-950/30 hover:bg-red-600 hover:text-black font-bold transition">
+        BURN
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Terminal Log Area -->
+  <main id="terminal-output" class="flex-1 overflow-y-auto p-3 sm:p-6 space-y-2.5 text-sm sm:text-base z-10 leading-relaxed" onclick="focusInput()">
+  </main>
+
+  <!-- Remote Peer Typing Indicator -->
+  <div id="typing-indicator" class="hidden px-4 sm:px-6 py-1 text-xs text-emerald-400/90 bg-[#020b04] border-t border-emerald-950/60 italic tracking-wider z-20">
+    <span class="inline-block animate-pulse">▶ REMOTE TERMINAL IS TRANSMITTING KEYSTROKES...</span>
+  </div>
+
+  <!-- Voice Recording Active Bar -->
+  <div id="voice-rec-bar" class="hidden px-3 sm:px-6 py-2 bg-red-950/40 border-t border-red-500/60 flex items-center justify-between text-xs z-20 shrink-0">
+    <div class="flex items-center space-x-2.5">
+      <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+      <span class="text-red-400 font-bold tracking-wider">RECORDING AUDIO PACKET:</span>
+      <span id="voice-timer" class="text-[#00ff41] font-mono font-bold text-sm">00:00</span>
+    </div>
+    <div class="flex items-center space-x-2">
+      <button type="button" onclick="stopVoiceRecording(false)" class="px-2.5 py-1 rounded border border-red-500/60 text-red-400 hover:bg-red-600 hover:text-black font-bold transition">
+        CANCEL [✕]
+      </button>
+      <button type="button" onclick="stopVoiceRecording(true)" class="px-3 py-1 rounded border border-[#00ff41] bg-[#003b14] text-[#00ff41] hover:bg-[#00ff41] hover:text-black font-bold transition glow-box">
+        SEND VOICE [⏎]
+      </button>
+    </div>
+  </div>
+
+  <!-- Command & Chat Input Footer -->
+  <footer class="border-t subtle-border bg-[#020b04] p-2.5 sm:p-4 z-20 shrink-0">
+    <input
+      id="image-input"
+      type="file"
+      accept="image/*"
+      class="hidden"
+      onchange="handleImageSelect(event)"
+    />
+
+    <form id="chat-form" onsubmit="handleFormSubmit(event)" class="flex items-center space-x-1.5 sm:space-x-2 max-w-6xl mx-auto">
+      <span id="prompt-prefix" class="text-[#00ff41] font-bold text-sm sm:text-base shrink-0 select-none">[&gt;]</span>
+      <div class="relative flex-1 flex items-center">
+        <input
+          id="terminal-input"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="Type message, /name, /help, /op, or send [PIC] / [VOICE]..."
+          class="w-full bg-transparent text-[#00ff41] focus:outline-none font-mono text-sm sm:text-base pr-2"
+        />
+      </div>
+
+      <button
+        type="button"
+        onclick="triggerImageSelect()"
+        title="Send a Picture (or paste image from clipboard)"
+        class="px-2.5 sm:px-3 py-1.5 rounded border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-xs tracking-wider transition shrink-0"
+      >
+        [PIC]
+      </button>
+
+      <button
+        id="voice-btn"
+        type="button"
+        onclick="toggleVoiceRecording()"
+        title="Record & Send a Voice Note"
+        class="px-2.5 sm:px-3 py-1.5 rounded border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-xs tracking-wider transition shrink-0"
+      >
+        [VOICE]
+      </button>
+
+      <button
+        type="submit"
+        class="px-3 sm:px-4 py-1.5 rounded border border-[#00ff41] bg-[#00290d] hover:bg-[#00ff41] hover:text-black font-bold text-xs sm:text-sm tracking-wider transition shrink-0 glow-box"
+      >
+        SEND [⏎]
+      </button>
+    </form>
+  </footer>
+
+  <!-- Modal: Fixed / Changeable Username Login -->
+  <div id="username-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center p-4 z-50" onclick="closeUsernameModal()">
+    <div class="bg-[#020c04] border-2 border-[#00ff41] rounded-lg max-w-md w-full p-5 glow-box relative" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between border-b subtle-border pb-3 mb-4">
+        <div class="flex items-center space-x-2">
+          <span class="riddler-q text-2xl font-bold">?</span>
+          <h2 id="username-modal-title" class="text-sm sm:text-base font-bold tracking-widest uppercase text-[#00ff41]">TERMINAL IDENTITY LOGIN</h2>
+        </div>
+        <button id="username-close-btn" onclick="closeUsernameModal()" class="text-emerald-400 hover:text-white px-2 py-0.5 border subtle-border rounded text-xs">ESC</button>
+      </div>
+
+      <form onsubmit="submitUsernameModal(event)" class="space-y-4">
+        <p class="text-xs text-emerald-300/90 leading-relaxed">
+          Choose a <b>unique</b> codename/username below. Live availability check ensures no two users share the same name. (Note: <b>BATMAN</b> is permanently reserved for the Website Owner):
+        </p>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-[11px] text-emerald-500 font-bold tracking-wider">YOUR UNIQUE CODENAME:</label>
+            <span id="username-avail-badge" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#00220c] border border-[#00ff41]/40 text-emerald-400">CHECKING...</span>
+          </div>
+          <input
+            id="username-input"
+            type="text"
+            maxlength="18"
+            autocomplete="off"
+            oninput="handleUsernameLiveInput()"
+            placeholder="e.g. NIGHTWING_01"
+            class="w-full bg-black border-2 border-[#00ff41] px-3 py-2.5 rounded text-center text-lg font-bold tracking-widest text-[#00ff41] uppercase focus:outline-none"
+          />
+        </div>
+
+        <!-- Quick Unique Presets -->
+        <div>
+          <span class="block text-[10px] text-emerald-500/80 mb-1.5 tracking-wider">OR GENERATE A UNIQUE PRESET:</span>
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" onclick="fillPresetUsername('VENGEANCE')" class="text-[11px] px-2 py-0.5 rounded border subtle-border bg-[#001a07] hover:bg-[#00ff41] hover:text-black transition">VENGEANCE</button>
+            <button type="button" onclick="fillPresetUsername('GOTHAM_KNIGHT')" class="text-[11px] px-2 py-0.5 rounded border subtle-border bg-[#001a07] hover:bg-[#00ff41] hover:text-black transition">GOTHAM_KNIGHT</button>
+            <button type="button" onclick="fillPresetUsername('GHOST_NODE')" class="text-[11px] px-2 py-0.5 rounded border subtle-border bg-[#001a07] hover:bg-[#00ff41] hover:text-black transition">GHOST_NODE</button>
+            <button type="button" onclick="fillPresetUsername('CIPHER_X')" class="text-[11px] px-2 py-0.5 rounded border subtle-border bg-[#001a07] hover:bg-[#00ff41] hover:text-black transition">CIPHER_X</button>
+          </div>
+        </div>
+
+        <div id="username-error" class="hidden text-xs text-red-400 font-bold text-center">
+          Please enter a valid, available username (2–18 characters).
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-1">
+          <button id="username-cancel-btn" type="button" onclick="closeUsernameModal()" class="px-3 py-1.5 rounded border subtle-border text-xs hover:bg-emerald-950">
+            CANCEL
+          </button>
+          <button id="username-submit-btn" type="submit" class="px-4 py-1.5 rounded border border-[#00ff41] bg-[#00ff41] text-black font-bold text-xs tracking-wider hover:bg-emerald-300 transition">
+            CLAIM &amp; LOGIN [⏎]
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Secure Masked Operator Password Prompt -->
+  <div id="op-auth-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center p-4 z-50" onclick="closeOpAuthModal()">
+    <div class="bg-[#0a0900] border-2 border-[#ffd700] rounded-lg max-w-md w-full p-5 operator-glow relative" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between border-b border-yellow-600/40 pb-3 mb-4">
+        <div class="flex items-center space-x-2">
+          <span class="text-yellow-400 text-lg font-bold">★</span>
+          <h2 class="text-sm sm:text-base font-bold tracking-widest uppercase text-yellow-400">OPERATOR AUTHENTICATION</h2>
+        </div>
+        <button onclick="closeOpAuthModal()" class="text-yellow-400 hover:text-white px-2 py-0.5 border border-yellow-600/50 rounded text-xs">ESC</button>
+      </div>
+
+      <form onsubmit="submitOpAuthModal(event)" class="space-y-4">
+        <p class="text-xs text-yellow-200/80 leading-relaxed">
+          Enter your secret Owner Key below. Characters are hidden (`••••••`) so no one looking at your screen can see your password:
+        </p>
+        <div class="relative">
+          <input
+            id="op-password-input"
+            type="password"
+            autocomplete="off"
+            placeholder="••••••••••••••"
+            class="w-full bg-black border-2 border-[#ffd700] px-3 py-2.5 rounded text-center text-lg font-bold tracking-widest text-yellow-400 focus:outline-none"
+          />
+          <button
+            type="button"
+            onclick="togglePasswordVisibility()"
+            id="op-eye-btn"
+            class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] px-1.5 py-0.5 border border-yellow-600/60 rounded text-yellow-400 hover:bg-yellow-500 hover:text-black font-bold"
+          >
+            SHOW
+          </button>
+        </div>
+        <div id="op-auth-error" class="hidden text-xs text-red-400 font-bold text-center">
+          [SECURITY ALERT] Invalid Owner Key. Please try again.
+        </div>
+        <div class="flex justify-end space-x-2">
+          <button type="button" onclick="closeOpAuthModal()" class="px-3 py-1.5 rounded border border-yellow-700/60 text-yellow-400 text-xs hover:bg-yellow-950/50">
+            CANCEL
+          </button>
+          <button type="submit" class="px-4 py-1.5 rounded border border-[#ffd700] bg-[#ffd700] text-black font-bold text-xs tracking-wider hover:bg-yellow-300 transition">
+            UNLOCK OPERATOR [⏎]
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Owner Broadcast Prompt -->
+  <div id="broadcast-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center p-4 z-50" onclick="closeBroadcastModal()">
+    <div class="bg-[#120202] border-2 border-red-500 rounded-lg max-w-md w-full p-5 relative" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between border-b border-red-600/40 pb-3 mb-4">
+        <div class="flex items-center space-x-2">
+          <span class="text-red-500 text-lg font-bold">📢</span>
+          <h2 class="text-sm sm:text-base font-bold tracking-widest uppercase text-red-400">EMERGENCY SYSTEM BROADCAST</h2>
+        </div>
+        <button onclick="closeBroadcastModal()" class="text-red-400 hover:text-white px-2 py-0.5 border border-red-600/50 rounded text-xs">ESC</button>
+      </div>
+
+      <form onsubmit="submitBroadcastModal(event)" class="space-y-4">
+        <p class="text-xs text-red-200/80 leading-relaxed">
+          Transmit a flashing red alert banner across all connected terminals on this frequency:
+        </p>
+        <input
+          id="broadcast-modal-input"
+          type="text"
+          autocomplete="off"
+          placeholder="ENTER ALERT MESSAGE..."
+          class="w-full bg-black border-2 border-red-500 px-3 py-2.5 rounded text-sm font-bold tracking-wider text-red-300 uppercase focus:outline-none"
+        />
+        <div class="flex justify-end space-x-2">
+          <button type="button" onclick="closeBroadcastModal()" class="px-3 py-1.5 rounded border border-red-700/60 text-red-400 text-xs hover:bg-red-950/50">
+            CANCEL
+          </button>
+          <button type="submit" class="px-4 py-1.5 rounded border border-red-500 bg-red-500 text-black font-bold text-xs tracking-wider hover:bg-red-400 transition">
+            TRANSMIT ALERT
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Fullscreen Image Lightbox -->
+  <div id="image-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center p-4 z-50" onclick="closeImageModal()">
+    <div class="bg-[#020c04] border-2 border-[#00ff41] rounded-lg max-w-3xl w-full p-4 glow-box relative" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between border-b subtle-border pb-2.5 mb-3">
+        <span id="image-modal-title" class="text-xs font-bold tracking-widest uppercase text-[#00ff41]">RECEIVED IMAGE PACKET</span>
+        <div class="flex items-center space-x-2">
+          <a id="image-download-link" href="#" download="rataalada-chat_image.jpg" class="text-xs px-2.5 py-0.5 border border-[#00ff41] bg-[#002b0f] text-[#00ff41] hover:bg-[#00ff41] hover:text-black font-bold rounded transition">
+            SAVE FILE
+          </a>
+          <button onclick="closeImageModal()" class="text-emerald-400 hover:text-white px-2 py-0.5 border subtle-border rounded text-xs">ESC</button>
+        </div>
+      </div>
+      <div class="flex items-center justify-center bg-black/80 rounded border subtle-border p-2 max-h-[75vh] overflow-auto">
+        <img id="image-modal-preview" src="" alt="Full Preview" class="max-h-[70vh] w-auto object-contain rounded" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Join Friend's Frequency Code -->
+  <div id="join-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm hidden items-center justify-center p-4 z-50" onclick="closeJoinModal()">
+    <div class="bg-[#020c04] border-2 border-[#00ff41] rounded-lg max-w-md w-full p-5 glow-box relative" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between border-b subtle-border pb-3 mb-4">
+        <div class="flex items-center space-x-2">
+          <span class="riddler-q text-2xl font-bold">?</span>
+          <h2 class="text-base font-bold tracking-widest uppercase">JOIN FRIEND'S FREQUENCY</h2>
+        </div>
+        <button onclick="closeJoinModal()" class="text-emerald-400 hover:text-white px-2 py-0.5 border subtle-border rounded text-xs">ESC</button>
+      </div>
+      <form onsubmit="submitJoinModal(event)" class="space-y-4">
+        <p class="text-xs text-emerald-300/90">Enter the 6-digit Frequency Code (or paste the invite URL) from your other device:</p>
+        <input
+          id="join-code-input"
+          type="text"
+          autocomplete="off"
+          placeholder="e.g. 7X9K2M"
+          class="w-full bg-black border-2 border-[#00ff41] px-3 py-2.5 rounded text-center text-lg font-bold tracking-widest text-[#00ff41] uppercase focus:outline-none"
+        />
+        <div class="flex justify-end space-x-2">
+          <button type="button" onclick="closeJoinModal()" class="px-3 py-1.5 rounded border subtle-border text-xs hover:bg-emerald-950">CANCEL</button>
+          <button type="submit" class="px-4 py-1.5 rounded border border-[#00ff41] bg-[#00ff41] text-black font-bold text-xs tracking-wider hover:bg-emerald-300 transition">LINK TERMINAL [⏎]</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-16 left-1/2 -translate-x-1/2 bg-[#002b0f] border-2 border-[#00ff41] text-[#00ff41] px-4 py-1.5 rounded text-xs font-bold tracking-widest hidden z-50 glow-box"></div>
+
+  <!-- Modal: Share Link & Frequency Code -->
+  <div id="share-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm hidden items-center justify-center p-4 z-50" onclick="closeShareModal()">
+    <div class="bg-[#020c04] border-2 border-[#00ff41] rounded-lg max-w-md w-full p-5 glow-box relative" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between border-b subtle-border pb-3 mb-4">
+        <div class="flex items-center space-x-2">
+          <span class="riddler-q text-2xl font-bold">?</span>
+          <h2 class="text-base font-bold tracking-widest uppercase">LINK SECOND DEVICE / FRIEND</h2>
+        </div>
+        <button onclick="closeShareModal()" class="text-emerald-400 hover:text-white px-2 py-0.5 border subtle-border rounded text-xs">ESC</button>
+      </div>
+
+      <div class="space-y-4 text-xs sm:text-sm">
+        <div class="p-3 rounded bg-[#001c08] border subtle-border">
+          <p class="text-emerald-400 font-bold mb-1">METHOD 1: 6-DIGIT FREQUENCY CODE</p>
+          <p class="text-emerald-200/80 text-xs mb-2">Open your site on the other device, click <b>JOIN FRIEND'S CODE</b>, and enter:</p>
+          <div class="flex items-center justify-between bg-black border border-[#00ff41] px-3 py-2 rounded">
+            <span id="modal-freq-code" class="text-xl font-bold tracking-[0.25em] text-[#00ff41]">------</span>
+            <button onclick="copyFreqCode()" class="px-2.5 py-1 bg-[#003b14] hover:bg-[#00ff41] hover:text-black text-xs font-bold rounded transition">
+              COPY CODE
+            </button>
+          </div>
+        </div>
+
+        <div class="p-3 rounded bg-[#001c08] border subtle-border">
+          <p class="text-emerald-400 font-bold mb-1">METHOD 2: DIRECT AUTO-JOIN LINK</p>
+          <p class="text-emerald-200/80 text-xs mb-2">Send this URL to your friend or open it on your phone:</p>
+          <div class="flex space-x-2">
+            <input id="share-url-input" type="text" readonly class="w-full bg-black border subtle-border px-2.5 py-1.5 rounded text-xs text-[#00ff41] focus:outline-none" />
+            <button onclick="copyInviteLink()" class="px-3 py-1.5 bg-[#003b14] hover:bg-[#00ff41] hover:text-black text-xs font-bold rounded shrink-0 transition">
+              COPY
+            </button>
+          </div>
+        </div>
+
+        <div class="flex flex-col items-center justify-center p-3 border subtle-border rounded bg-black/60">
+          <img id="qr-image" alt="Room QR Code" class="w-36 h-36 rounded border border-[#00ff41]/50 p-1 bg-black" src="" />
+          <span class="text-[11px] text-emerald-400/70 mt-2">SCAN WITH PHONE CAMERA TO LINK INSTANTLY</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Cloud Profile & Global Unique Username Registry Module -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    let db = null;
+    let auth = null;
+    let currentUser = null;
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'rataaldachat-default';
+
+    // Map of UPPERCASE_USERNAME -> ownerIdentifier (uid or localClientId)
+    window.cloudUsernameDirectory = new Map();
+
+    async function initCloudIdentitySync() {
+      try {
+        if (typeof __firebase_config === 'undefined' || !__firebase_config) return;
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+          currentUser = user;
+          if (!currentUser) return;
+          window.currentCloudUid = currentUser.uid;
+
+          // Listen to public directory of claimed usernames so no two users can pick the same name
+          try {
+            const registryCol = collection(db, 'artifacts', appId, 'public', 'data', 'usernames');
+            onSnapshot(
+              registryCol,
+              (snapshot) => {
+                snapshot.forEach((docSnap) => {
+                  const data = docSnap.data();
+                  if (data && data.username && data.ownerId) {
+                    window.cloudUsernameDirectory.set(String(data.username).toUpperCase(), data.ownerId);
+                  }
+                });
+                if (typeof window.handleUsernameLiveInput === 'function') {
+                  window.handleUsernameLiveInput();
+                }
+              },
+              () => {}
+            );
+          } catch (err) {}
+
+          try {
+            const profileRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile', 'identity');
+            const snap = await getDoc(profileRef);
+            if (snap.exists() && snap.data().username) {
+              if (window.applyLoadedUsername) {
+                window.applyLoadedUsername(snap.data().username, true);
+              }
+            }
+          } catch (err) {}
+        });
+      } catch (e) {}
+    }
+
+    window.saveUsernameToCloud = async function(cleanName, localClientId) {
+      if (!db || !currentUser || !cleanName) return;
+      const upper = String(cleanName).toUpperCase();
+      if (upper === 'BATMAN' || upper === 'OPERATOR') return;
+      try {
+        const ownerKey = currentUser.uid || localClientId;
+        const profileRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile', 'identity');
+        await setDoc(profileRef, {
+          username: upper,
+          updatedAt: Date.now()
+        }, { merge: true });
+
+        const publicClaimRef = doc(db, 'artifacts', appId, 'public', 'data', 'usernames', upper);
+        await setDoc(publicClaimRef, {
+          username: upper,
+          ownerId: ownerKey,
+          clientId: localClientId || '',
+          updatedAt: Date.now()
+        }, { merge: true });
+      } catch (e) {}
+    };
+
+    initCloudIdentitySync();
+  </script>
+
+  <script>
+    // ==========================================
+    // CORE STATE & OWNER CONFIGURATION
+    // ==========================================
+    const HANDLES = [
+      '[ANON_01]',
+      '[ANON_02]',
+      '[GHOST_NODE]',
+      '[CIPHER_X]',
+      '[VENGEANCE]'
+    ];
+    const OWNER_FIXED_NAME = 'BATMAN';
+    const OWNER_FIXED_HANDLE = '[★ BATMAN]';
+    const RESERVED_OWNER_NAMES = new Set(['BATMAN', 'THE_BATMAN', 'THEBATMAN', 'OPERATOR', 'OWNER', 'ADMIN', 'BRUCE_WAYNE']);
+
+    let currentHandleIndex = 0;
+    let savedCustomUsername = ''; // Stores regular user's fixed/custom username without brackets
+    let myHandle = HANDLES[0];
+    let roomId = '';
+    let cipherMode = false;
+    let sfxEnabled = true;
+    let botMode = 'AUTO';
+    let isOperator = false;
+    let isRoomLocked = false;
+    let mutedUsers = new Set();
+
+    // Obfuscated XOR-73 Byte Array for "rataalda_owner_2026"
+    const OWNER_SECRET_BYTES = [59, 40, 61, 40, 40, 37, 45, 40, 22, 38, 62, 39, 44, 59, 22, 123, 121, 123, 127];
+    const OWNER_XOR_SALT = 73;
+
+    const localClientId = 'node_' + Math.random().toString(36).substring(2, 10);
+    const seenPacketIds = new Set();
+    const incomingChunkBuffers = new Map();
+    const remotePeers = new Map();
+
+    // Multi-Transport Networking State
+    let mqttClients = [];
+    let mqttTopic = '';
+    let peer = null;
+    let myPeerId = '';
+    let mySlotIndex = -1;
+    let activePeerConns = new Map();
+    let broadcastChannel = null;
+    let heartbeatInterval = null;
+    let slotScanInterval = null;
+    let typingTimeout = null;
+
+    // Voice Recording State
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecordingVoice = false;
+    let shouldSendRecordedVoice = false;
+    let voiceStartTime = 0;
+    let voiceTimerInterval = null;
+
+    const CIPHER_MAP = {
+      'A': '⍙', 'B': '⍚', 'C': '⍛', 'D': '⍜', 'E': '⍝', 'F': '⍞', 'G': '⍟',
+      'H': '⍠', 'I': '⍡', 'J': '⍢', 'K': '⍣', 'L': '⍤', 'M': '⍥', 'N': '⍦',
+      'O': '⍧', 'P': '⍨', 'Q': '⍩', 'R': '⍪', 'S': '⍫', 'T': '⍬', 'U': '⍭',
+      'V': '⍮', 'W': '⍯', 'X': '⍰', 'Y': '⍱', 'Z': '⍲'
+    };
+    const REVERSE_CIPHER_MAP = Object.fromEntries(
+      Object.entries(CIPHER_MAP).map(([k, v]) => [v, k])
+    );
+
+    const RIDDLER_RESPONSES = [
+      "<?> SOLO TERMINAL MODE: NO SECOND DEVICE DETECTED ON THIS FREQUENCY YET. CLICK '+ INVITE DEVICE' OR 'JOIN FRIEND'S CODE' TO LINK TWO DEVICES.",
+      "<?> IF YOU ARE JUSTICE, PLEASE DO NOT LIE. SHARE FREQUENCY CODE WITH YOUR OTHER DEVICE TO TEST LIVE P2P.",
+      "<?> ENCRYPTED TUNNEL READY. ONCE YOUR SECOND DEVICE JOINS THIS FREQUENCY CODE, MY AUTO-RESPONDER STEPS ASIDE AUTOMATICALLY."
+    ];
+    let riddlerIdx = 0;
+
+    const outputEl = document.getElementById('terminal-output');
+    const inputEl = document.getElementById('terminal-input');
+
+    // ==========================================
+    // PERSISTENT USERNAME LOGIN & AVAILABILITY CHECK
+    // ==========================================
+    function sanitizeUsername(raw) {
+      return String(raw || '')
+        .trim()
+        .replace(/[\[\]★]/g, '')
+        .replace(/\s+/g, '_')
+        .replace(/[^a-zA-Z0-9_\-.]/g, '')
+        .toUpperCase()
+        .substring(0, 18);
+    }
+
+    function normalizePeerHandleToName(handleStr) {
+      return String(handleStr || '')
+        .replace(/[\[\]★]/g, '')
+        .trim()
+        .toUpperCase();
+    }
+
+    function isReservedOwnerName(cleanName) {
+      const upper = sanitizeUsername(cleanName);
+      return RESERVED_OWNER_NAMES.has(upper) || upper.includes('BATMAN');
+    }
+
+    function checkUsernameAvailability(rawCandidate) {
+      const clean = sanitizeUsername(rawCandidate);
+      if (!clean || clean.length < 2) {
+        return {
+          available: false,
+          reason: 'TOO_SHORT',
+          message: 'ENTER 2–18 CHARS'
+        };
+      }
+
+      // 1. Check if reserved exclusively for Operator (BATMAN)
+      if (isReservedOwnerName(clean)) {
+        if (isOperator && clean === OWNER_FIXED_NAME) {
+          return {
+            available: true,
+            reason: 'OWNER_VERIFIED',
+            message: '★ RESERVED FOR YOU (OWNER)'
+          };
+        }
+        return {
+          available: false,
+          reason: 'RESERVED_OWNER',
+          message: '🔒 RESERVED FOR OWNER [★ BATMAN]'
+        };
+      }
+
+      // 2. Check active P2P/WSS peers in the room
+      for (const [peerSenderId, info] of remotePeers.entries()) {
+        if (peerSenderId === localClientId) continue;
+        const peerClean = normalizePeerHandleToName(info.handle);
+        if (peerClean === clean) {
+          return {
+            available: false,
+            reason: 'TAKEN_IN_ROOM',
+            message: '✕ TAKEN BY CONNECTED PEER'
+          };
+        }
+      }
+
+      // 3. Check global Cloud Registry (if loaded)
+      if (window.cloudUsernameDirectory && window.cloudUsernameDirectory.has(clean)) {
+        const ownerId = window.cloudUsernameDirectory.get(clean);
+        const myUid = window.currentCloudUid || localClientId;
+        if (ownerId && ownerId !== myUid && ownerId !== localClientId && clean !== savedCustomUsername) {
+          return {
+            available: false,
+            reason: 'TAKEN_GLOBAL',
+            message: '✕ ALREADY CLAIMED'
+          };
+        }
+      }
+
+      return {
+        available: true,
+        reason: 'AVAILABLE',
+        message: '✓ AVAILABLE'
+      };
+    }
+
+    function suggestUniqueUsername(baseName) {
+      let cleanBase = sanitizeUsername(baseName);
+      if (!cleanBase || isReservedOwnerName(cleanBase)) {
+        cleanBase = 'GHOST_NODE';
+      }
+      cleanBase = cleanBase.substring(0, 13);
+      for (let i = 1; i < 99; i++) {
+        const suffix = Math.floor(10 + Math.random() * 89);
+        const candidate = `${cleanBase}_${suffix}`;
+        if (checkUsernameAvailability(candidate).available) {
+          return candidate;
+        }
+      }
+      return `${cleanBase}_${Date.now().toString().slice(-3)}`;
+    }
+
+    window.handleUsernameLiveInput = function() {
+      const input = document.getElementById('username-input');
+      const badge = document.getElementById('username-avail-badge');
+      const errEl = document.getElementById('username-error');
+      const submitBtn = document.getElementById('username-submit-btn');
+      if (!input || !badge) return;
+
+      const status = checkUsernameAvailability(input.value);
+      badge.textContent = status.message;
+
+      if (status.available) {
+        badge.className = 'text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#002b0f] border border-[#00ff41] text-[#00ff41]';
+        input.classList.remove('border-red-500', 'text-red-400');
+        input.classList.add('border-[#00ff41]', 'text-[#00ff41]');
+        errEl.classList.add('hidden');
+        if (submitBtn) submitBtn.disabled = false;
+      } else {
+        badge.className = 'text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-950/70 border border-red-500 text-red-300';
+        if (input.value.trim().length > 0) {
+          input.classList.remove('border-[#00ff41]', 'text-[#00ff41]');
+          input.classList.add('border-red-500', 'text-red-400');
+        }
+      }
+    };
+
+    function readUsernameCookie() {
+      try {
+        const match = document.cookie.match(/(?:^|;\s*)rata_username=([^;]*)/);
+        if (match && match[1]) {
+          const candidate = sanitizeUsername(decodeURIComponent(match[1]));
+          if (!isReservedOwnerName(candidate)) return candidate;
+        }
+      } catch (e) {}
+      try {
+        if (window.name && window.name.startsWith('RATA_USER:')) {
+          const candidate = sanitizeUsername(window.name.replace('RATA_USER:', ''));
+          if (!isReservedOwnerName(candidate)) return candidate;
+        }
+      } catch (e) {}
+      return '';
+    }
+
+    function writeUsernameCookie(cleanName) {
+      if (isReservedOwnerName(cleanName)) return;
+      try {
+        document.cookie = `rata_username=${encodeURIComponent(cleanName)}; path=/; max-age=31536000; SameSite=Lax`;
+      } catch (e) {}
+      try {
+        window.name = `RATA_USER:${cleanName}`;
+      } catch (e) {}
+      if (typeof window.saveUsernameToCloud === 'function') {
+        window.saveUsernameToCloud(cleanName, localClientId);
+      }
+    }
+
+    window.applyLoadedUsername = function(cleanName, fromCloud = false) {
+      const sanitized = sanitizeUsername(cleanName);
+      if (!sanitized || isReservedOwnerName(sanitized)) return;
+
+      const check = checkUsernameAvailability(sanitized);
+      const finalName = check.available ? sanitized : suggestUniqueUsername(sanitized);
+
+      savedCustomUsername = finalName;
+      writeUsernameCookie(finalName);
+
+      if (!isOperator) {
+        myHandle = `[${finalName}]`;
+        const handleEl = document.getElementById('handle-display');
+        handleEl.textContent = myHandle;
+        handleEl.className = 'font-bold underline';
+      }
+
+      if (fromCloud) {
+        const modal = document.getElementById('username-modal');
+        if (modal && !modal.classList.contains('hidden')) {
+          closeUsernameModal();
+        }
+      }
+    };
+
+    function openUsernameModal(isInitialLogin = false) {
+      initAudio();
+      playBeep(760, 0.05);
+
+      if (isOperator) {
+        appendSystemLine(`[★ BATMAN] As the verified Owner, your identity is permanently fixed to ${OWNER_FIXED_HANDLE}. (Click DEOP if you wish to switch to a normal user handle).`, 'highlight');
+        return;
+      }
+
+      const modal = document.getElementById('username-modal');
+      const titleEl = document.getElementById('username-modal-title');
+      const input = document.getElementById('username-input');
+      const errEl = document.getElementById('username-error');
+      const cancelBtn = document.getElementById('username-cancel-btn');
+      const closeBtn = document.getElementById('username-close-btn');
+
+      errEl.classList.add('hidden');
+      titleEl.textContent = isInitialLogin ? 'TERMINAL IDENTITY LOGIN' : 'CHANGE UNIQUE USERNAME';
+
+      const initialCandidate = savedCustomUsername || suggestUniqueUsername('VENGEANCE');
+      input.value = initialCandidate;
+
+      if (isInitialLogin) {
+        cancelBtn.classList.add('hidden');
+        closeBtn.classList.add('hidden');
+      } else {
+        cancelBtn.classList.remove('hidden');
+        closeBtn.classList.remove('hidden');
+      }
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      handleUsernameLiveInput();
+      setTimeout(() => {
+        input.focus();
+        input.select();
+      }, 60);
+    }
+
+    function closeUsernameModal() {
+      const modal = document.getElementById('username-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      inputEl.focus();
+    }
+
+    function fillPresetUsername(preset) {
+      const input = document.getElementById('username-input');
+      // If plain preset is available, use it; otherwise append a unique 2-digit node code
+      const checkPlain = checkUsernameAvailability(preset);
+      input.value = checkPlain.available ? preset : suggestUniqueUsername(preset);
+      handleUsernameLiveInput();
+      input.focus();
+    }
+
+    function submitUsernameModal(e) {
+      e.preventDefault();
+      const input = document.getElementById('username-input');
+      const errEl = document.getElementById('username-error');
+      const clean = sanitizeUsername(input.value);
+      const check = checkUsernameAvailability(clean);
+
+      if (!check.available) {
+        playBeep(180, 0.25, 'sawtooth');
+        errEl.classList.remove('hidden');
+        if (check.reason === 'RESERVED_OWNER') {
+          errEl.textContent = '[ACCESS DENIED] "BATMAN" is permanently reserved for the Website Owner (/op).';
+        } else if (check.reason === 'TAKEN_IN_ROOM' || check.reason === 'TAKEN_GLOBAL') {
+          const suggestion = suggestUniqueUsername(clean);
+          errEl.textContent = `"${clean}" is already taken! Try "${suggestion}" instead.`;
+        } else {
+          errEl.textContent = 'Please enter a valid username (2–18 characters).';
+        }
+        return;
+      }
+
+      const previousHandle = myHandle;
+      savedCustomUsername = clean;
+      writeUsernameCookie(clean);
+
+      if (!isOperator) {
+        myHandle = `[${clean}]`;
+        const handleEl = document.getElementById('handle-display');
+        handleEl.textContent = myHandle;
+        handleEl.className = 'font-bold underline';
+      }
+
+      closeUsernameModal();
+      playConnectChime();
+
+      if (previousHandle && previousHandle !== myHandle) {
+        appendSystemLine(`[UNIQUE IDENTITY CLAIMED] Logged in & saved fixed username: ${myHandle}`, 'highlight');
+        sendPacket({
+          type: 'RENAME_NOTICE',
+          oldHandle: previousHandle,
+          handle: myHandle,
+          isOperator
+        });
+      } else {
+        appendSystemLine(`[IDENTITY VERIFIED] Logged in as ${myHandle}. (Click "ID: ${myHandle} ✎" or type /name anytime to change)`, 'highlight');
+      }
+
+      broadcastPresence('PRESENCE_PING');
+    }
+
+    // ==========================================
+    // SYNTHETIC WEB AUDIO ENGINE
+    // ==========================================
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioCtx = new AudioContext();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+    }
+
+    function playKeySound() {
+      if (!sfxEnabled) return;
+      initAudio();
+      if (!audioCtx) return;
+
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(650 + Math.random() * 250, now);
+      osc.frequency.exponentialRampToValueAtTime(110, now + 0.025);
+
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.026);
+    }
+
+    function playBeep(freq = 920, duration = 0.08, type = 'sine') {
+      if (!sfxEnabled) return;
+      initAudio();
+      if (!audioCtx) return;
+
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, now);
+
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + duration);
+    }
+
+    function playConnectChime() {
+      playBeep(587.33, 0.08, 'square');
+      setTimeout(() => playBeep(880, 0.12, 'square'), 90);
+    }
+
+    function playOperatorChime() {
+      playBeep(440, 0.1, 'square');
+      setTimeout(() => playBeep(659.25, 0.1, 'square'), 100);
+      setTimeout(() => playBeep(880, 0.2, 'square'), 200);
+    }
+
+    function toggleAudio() {
+      sfxEnabled = !sfxEnabled;
+      document.getElementById('audio-label').textContent = sfxEnabled ? 'SFX: ON' : 'SFX: OFF';
+      if (sfxEnabled) playBeep(880, 0.06);
+    }
+
+    function toggleRiddlerBot() {
+      const states = ['AUTO', 'ON', 'OFF'];
+      botMode = states[(states.indexOf(botMode) + 1) % states.length];
+      document.getElementById('bot-label').textContent = botMode;
+      playBeep(760, 0.05);
+      appendSystemLine(`[RIDDLER BOT MODE]: ${botMode} ${botMode === 'AUTO' ? '(Steps aside automatically as soon as another device links)' : ''}`, 'dim');
+    }
+
+    // ==========================================
+    // RELIABLE XOR-ENCODED OWNER AUTHENTICATION
+    // ==========================================
+    function encodeSecretBytes(str) {
+      const clean = String(str || '').trim();
+      return Array.from(clean).map(ch => ch.charCodeAt(0) ^ OWNER_XOR_SALT);
+    }
+
+    function isValidOwnerPassword(inputStr) {
+      if (!inputStr) return false;
+      const normalized = String(inputStr)
+        .trim()
+        .replace(/^["'\[\s]+|["'\]\s]+$/g, '')
+        .toLowerCase();
+
+      const expected = OWNER_SECRET_BYTES.map(b => String.fromCharCode(b ^ OWNER_XOR_SALT)).join('');
+      return normalized === expected;
+    }
+
+    function togglePasswordVisibility() {
+      const passInput = document.getElementById('op-password-input');
+      const eyeBtn = document.getElementById('op-eye-btn');
+      if (passInput.type === 'password') {
+        passInput.type = 'text';
+        eyeBtn.textContent = 'HIDE';
+      } else {
+        passInput.type = 'password';
+        eyeBtn.textContent = 'SHOW';
+      }
+      passInput.focus();
+    }
+
+    function openOpAuthModal() {
+      initAudio();
+      playBeep(780, 0.05);
+      const modal = document.getElementById('op-auth-modal');
+      const passInput = document.getElementById('op-password-input');
+      const errEl = document.getElementById('op-auth-error');
+      const eyeBtn = document.getElementById('op-eye-btn');
+      errEl.classList.add('hidden');
+      passInput.type = 'password';
+      eyeBtn.textContent = 'SHOW';
+      passInput.value = '';
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => passInput.focus(), 50);
+    }
+
+    function closeOpAuthModal() {
+      const modal = document.getElementById('op-auth-modal');
+      const passInput = document.getElementById('op-password-input');
+      passInput.value = '';
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function submitOpAuthModal(e) {
+      e.preventDefault();
+      const passInput = document.getElementById('op-password-input');
+      const rawPassword = passInput.value;
+      if (!rawPassword) return;
+
+      if (isValidOwnerPassword(rawPassword)) {
+        closeOpAuthModal();
+        activateOperatorMode(true);
+      } else {
+        playBeep(180, 0.3, 'sawtooth');
+        document.getElementById('op-auth-error').classList.remove('hidden');
+        passInput.select();
+      }
+    }
+
+    function verifyAndActivateOperator(passwordArg) {
+      if (!passwordArg || !passwordArg.trim()) {
+        openOpAuthModal();
+        return;
+      }
+
+      if (isValidOwnerPassword(passwordArg)) {
+        activateOperatorMode(true);
+      } else {
+        playBeep(180, 0.3, 'sawtooth');
+        appendSystemLine(`[SECURITY ALERT] Invalid Owner Key. Click "★ OP" at the top to use the secure login box.`, 'danger');
+      }
+    }
+
+    function activateOperatorMode(notify = true) {
+      const oldHandle = myHandle;
+      isOperator = true;
+      myHandle = OWNER_FIXED_HANDLE; // Always fixed as [★ BATMAN] for the Owner
+      const handleEl = document.getElementById('handle-display');
+      handleEl.textContent = myHandle;
+      handleEl.className = 'font-bold underline text-yellow-400';
+      document.getElementById('owner-control-bar').classList.remove('hidden');
+
+      if (notify) {
+        playOperatorChime();
+        appendSystemLine(`========================================================`, 'highlight');
+        appendSystemLine(`[★] OWNER ACCESS GRANTED. IDENTITY LOCKED AS ${OWNER_FIXED_HANDLE}.`, 'highlight');
+        appendSystemLine(`[★] EXCLUSIVE CONTROLS UNLOCKED AT TOP OF TERMINAL.`, 'highlight');
+        appendSystemLine(`========================================================`, 'highlight');
+      }
+      if (oldHandle !== myHandle) {
+        sendPacket({
+          type: 'RENAME_NOTICE',
+          oldHandle,
+          handle: myHandle,
+          isOperator: true
+        });
+      }
+      broadcastPresence('PRESENCE_PING');
+    }
+
+    function ownerDeop() {
+      const oldHandle = myHandle;
+      isOperator = false;
+      const fallback = savedCustomUsername && !isReservedOwnerName(savedCustomUsername)
+        ? savedCustomUsername
+        : suggestUniqueUsername('VENGEANCE');
+      savedCustomUsername = fallback;
+      myHandle = `[${fallback}]`;
+      const handleEl = document.getElementById('handle-display');
+      handleEl.textContent = myHandle;
+      handleEl.className = 'font-bold underline';
+      document.getElementById('owner-control-bar').classList.add('hidden');
+      playBeep(300, 0.15);
+      appendSystemLine(`[OPERATOR MODE EXITED] Returned to unique handle ${myHandle}.`, 'dim');
+      sendPacket({
+        type: 'RENAME_NOTICE',
+        oldHandle,
+        handle: myHandle,
+        isOperator: false
+      });
+      broadcastPresence('PRESENCE_PING');
+    }
+
+    function ownerDeop() {
+      isOperator = false;
+      myHandle = savedCustomUsername ? `[${savedCustomUsername}]` : HANDLES[0];
+      const handleEl = document.getElementById('handle-display');
+      handleEl.textContent = myHandle;
+      handleEl.className = 'font-bold underline';
+      document.getElementById('owner-control-bar').classList.add('hidden');
+      playBeep(300, 0.15);
+      appendSystemLine(`[OPERATOR MODE EXITED] Returned to saved handle ${myHandle}.`, 'dim');
+      broadcastPresence('PRESENCE_PING');
+    }
+
+    // ==========================================
+    // ROOM & URL INITIALIZATION
+    // ==========================================
+    function extractRoomFromUrl() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('room')) return params.get('room');
+      } catch (e) {}
+
+      try {
+        if (window.location.hash) {
+          const cleanHash = window.location.hash.replace(/^#/, '');
+          if (cleanHash.startsWith('room=')) return cleanHash.replace('room=', '');
+          if (cleanHash.length >= 3) return cleanHash;
+        }
+      } catch (e) {}
+
+      return null;
+    }
+
+    function generateRandomCode() {
+      const chars = '23456789abcdefghjkmnpqrstuvwxyz';
+      let result = '';
+      for (let i = 0; i < 6; i++) {
+        result += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return result;
+    }
+
+    function getShareUrl() {
+      try {
+        if (window.location.protocol === 'blob:' || window.location.protocol === 'about:') {
+          return `https://rataalda-chat.vercel.app/?room=${roomId}`;
+        }
+        return `${window.location.origin}${window.location.pathname}?room=${roomId}`;
+      } catch (e) {
+        return `https://rataalda-chat.vercel.app/?room=${roomId}`;
+      }
+    }
+
+    function setRoomFrequency(newRoomCode, isInitial = false) {
+      const sanitized = (newRoomCode || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+        .substring(0, 12);
+
+      roomId = sanitized || generateRandomCode();
+      remotePeers.clear();
+
+      try {
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+          const newUrl = `${window.location.pathname}?room=${roomId}`;
+          window.history.replaceState({ room: roomId }, '', newUrl);
+        } else {
+          window.location.hash = `room=${roomId}`;
+        }
+      } catch (e) {}
+
+      const upperCode = roomId.toUpperCase();
+      document.getElementById('room-display-id').textContent = upperCode;
+      document.getElementById('modal-freq-code').textContent = upperCode;
+      const shareUrl = getShareUrl();
+      document.getElementById('share-url-input').value = shareUrl;
+      document.getElementById('qr-image').src =
+        `https://api.qrserver.com/v1/create-qr-code/?size=180x180&color=00ff41&bgcolor=020602&data=${encodeURIComponent(shareUrl)}`;
+
+      if (!isInitial) {
+        appendSystemLine(`[TUNING OSCILLATOR TO FREQUENCY: ${upperCode}...]`, 'highlight');
+      }
+
+      initMultiTransportNetworking();
+    }
+
+    // ==========================================
+    // v4.6 TRIPLE-REDUNDANCY CROSS-DEVICE MESH
+    // ==========================================
+    function initMultiTransportNetworking() {
+      if (heartbeatInterval) clearInterval(heartbeatInterval);
+      if (slotScanInterval) clearInterval(slotScanInterval);
+
+      activePeerConns.forEach(c => { try { c.close(); } catch (e) {} });
+      activePeerConns.clear();
+
+      if (peer) {
+        try { peer.destroy(); } catch (e) {}
+        peer = null;
+      }
+
+      mqttClients.forEach(client => {
+        try { client.end(true); } catch (e) {}
+      });
+      mqttClients = [];
+
+      if (broadcastChannel) {
+        try { broadcastChannel.close(); } catch (e) {}
+        broadcastChannel = null;
+      }
+
+      updateConnectionUI();
+
+      try {
+        broadcastChannel = new BroadcastChannel(`rataaldachat_v45_${roomId}`);
+        broadcastChannel.onmessage = (event) => {
+          if (event.data) handleRawIncomingData(event.data, 'LOCAL_TAB');
+        };
+      } catch (e) {}
+
+      initMultiBrokerWss();
+      initWebRtcSlotMesh(0);
+
+      setTimeout(() => broadcastPresence('PRESENCE_PING'), 350);
+      heartbeatInterval = setInterval(() => {
+        broadcastPresence('PRESENCE_HEARTBEAT');
+        pruneStalePeers();
+      }, 3500);
+    }
+
+    function initMultiBrokerWss() {
+      if (typeof mqtt === 'undefined') return;
+      mqttTopic = `rataaldachat/v45/room/${roomId}`;
+
+      const brokerUrls = [
+        'wss://mqtt.eclipseprojects.io:443/mqtt',
+        'wss://broker.emqx.io:8084/mqtt',
+        'wss://broker.hivemq.com:8884/mqtt'
+      ];
+
+      brokerUrls.forEach((url, idx) => {
+        try {
+          const client = mqtt.connect(url, {
+            clientId: `rata45_${localClientId}_${idx}_${Math.random().toString(16).slice(2, 6)}`,
+            clean: true,
+            connectTimeout: 6000,
+            reconnectPeriod: 3500
+          });
+
+          client.on('connect', () => {
+            client.subscribe(mqttTopic, { qos: 0 }, (err) => {
+              if (!err) {
+                updateConnectionUI();
+                broadcastPresence('PRESENCE_PING');
+              }
+            });
+          });
+
+          client.on('message', (topic, messageBuffer) => {
+            if (topic !== mqttTopic) return;
+            try {
+              const parsed = JSON.parse(messageBuffer.toString());
+              handleRawIncomingData(parsed, 'WSS_RELAY');
+            } catch (e) {}
+          });
+
+          client.on('error', () => {});
+          mqttClients.push(client);
+        } catch (e) {}
+      });
+    }
+
+    function getSlotPeerId(slotIdx) {
+      return `rata45-${roomId}-slot-${slotIdx}`;
+    }
+
+    function initWebRtcSlotMesh(trySlot = 0) {
+      if (typeof Peer === 'undefined') return;
+      if (trySlot > 3) {
+        startPeerWithId(`rata45-${roomId}-${localClientId}`, -1);
+        return;
+      }
+
+      const candidateId = getSlotPeerId(trySlot);
+      startPeerWithId(candidateId, trySlot);
+    }
+
+    function startPeerWithId(candidateId, slotIdx) {
+      try {
+        const tempPeer = new Peer(candidateId, {
+          debug: 0,
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+              { urls: 'stun:global.stun.twilio.com:3478' }
+            ]
+          }
+        });
+
+        tempPeer.on('open', (id) => {
+          peer = tempPeer;
+          myPeerId = id;
+          mySlotIndex = slotIdx;
+          updateConnectionUI();
+          broadcastPresence('PRESENCE_PING');
+
+          connectToOtherSlots();
+          if (slotScanInterval) clearInterval(slotScanInterval);
+          slotScanInterval = setInterval(connectToOtherSlots, 4000);
+        });
+
+        tempPeer.on('connection', (conn) => {
+          setupWebRtcConn(conn);
+        });
+
+        tempPeer.on('error', (err) => {
+          if (err && err.type === 'unavailable-id' && slotIdx >= 0) {
+            try { tempPeer.destroy(); } catch (e) {}
+            initWebRtcSlotMesh(slotIdx + 1);
+          }
+        });
+      } catch (e) {}
+    }
+
+    function connectToOtherSlots() {
+      if (!peer || peer.destroyed || peer.disconnected) return;
+      for (let i = 0; i <= 3; i++) {
+        if (i === mySlotIndex) continue;
+        const targetId = getSlotPeerId(i);
+        connectToRemotePeerId(targetId);
+      }
+    }
+
+    function connectToRemotePeerId(remotePeerId) {
+      if (!peer || peer.destroyed || !remotePeerId || remotePeerId === myPeerId) return;
+      const existing = activePeerConns.get(remotePeerId);
+      if (existing && existing.open) return;
+
+      try {
+        const conn = peer.connect(remotePeerId, { reliable: true });
+        setupWebRtcConn(conn);
+      } catch (e) {}
+    }
+
+    function setupWebRtcConn(conn) {
+      if (!conn) return;
+      conn.on('open', () => {
+        activePeerConns.set(conn.peer, conn);
+        updateConnectionUI();
+        try {
+          conn.send({
+            type: 'PRESENCE_PING',
+            packetId: `${localClientId}_rtc_${Date.now()}`,
+            roomId,
+            senderId: localClientId,
+            handle: myHandle,
+            isOperator,
+            peerId: myPeerId,
+            timestamp: new Date().toLocaleTimeString([], { hour12: false })
+          });
+        } catch (e) {}
+      });
+
+      conn.on('data', (data) => {
+        if (data) handleRawIncomingData(data, 'WEBRTC_P2P');
+      });
+
+      conn.on('close', () => {
+        activePeerConns.delete(conn.peer);
+        updateConnectionUI();
+      });
+
+      conn.on('error', () => {
+        activePeerConns.delete(conn.peer);
+      });
+    }
+
+    // ==========================================
+    // PACKET CHUNKING & TRANSMISSION ENGINE
+    // ==========================================
+    function broadcastPresence(type = 'PRESENCE_PING') {
+      sendPacket({
+        type,
+        handle: myHandle,
+        isOperator,
+        peerId: myPeerId
+      });
+    }
+
+    function sendPacket(packet) {
+      if (isRoomLocked && !isOperator && packet.type === 'CHAT_MSG') {
+        appendSystemLine(`[ROOM LOCKED] Frequency code is locked by Operator. New messages blocked.`, 'warning');
+        return;
+      }
+
+      const packetId = `${localClientId}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      seenPacketIds.add(packetId);
+
+      const fullPayload = {
+        ...packet,
+        packetId,
+        roomId,
+        senderId: localClientId,
+        isOperator,
+        timestamp: packet.timestamp || new Date().toLocaleTimeString([], { hour12: false })
+      };
+
+      const serialized = JSON.stringify(fullPayload);
+
+      const CHUNK_LIMIT = 24000;
+      if (serialized.length > CHUNK_LIMIT && packet.type !== 'PACKET_CHUNK') {
+        const totalChunks = Math.ceil(serialized.length / CHUNK_LIMIT);
+        const transferId = `tx_${packetId}`;
+        for (let i = 0; i < totalChunks; i++) {
+          const slice = serialized.slice(i * CHUNK_LIMIT, (i + 1) * CHUNK_LIMIT);
+          const chunkEnvelope = {
+            type: 'PACKET_CHUNK',
+            packetId: `${transferId}_c${i}`,
+            transferId,
+            chunkIndex: i,
+            totalChunks,
+            chunkData: slice,
+            roomId,
+            senderId: localClientId,
+            handle: myHandle
+          };
+          seenPacketIds.add(chunkEnvelope.packetId);
+          setTimeout(() => transmitRawEnvelope(chunkEnvelope), i * 35);
+        }
+        return;
+      }
+
+      transmitRawEnvelope(fullPayload);
+    }
+
+    function transmitRawEnvelope(payload) {
+      if (broadcastChannel) {
+        try { broadcastChannel.postMessage(payload); } catch (e) {}
+      }
+
+      activePeerConns.forEach((conn) => {
+        if (conn && conn.open) {
+          try { conn.send(payload); } catch (e) {}
+        }
+      });
+
+      const str = JSON.stringify(payload);
+      mqttClients.forEach((client) => {
+        if (client && client.connected && mqttTopic) {
+          try {
+            client.publish(mqttTopic, str, { qos: 0 });
+          } catch (e) {}
+        }
+      });
+    }
+
+    function handleRawIncomingData(data, transportSource) {
+      if (!data || data.senderId === localClientId) return;
+      if (data.roomId && data.roomId !== roomId) return;
+      if (mutedUsers.has(data.handle)) return;
+
+      if (data.packetId) {
+        if (seenPacketIds.has(data.packetId)) return;
+        seenPacketIds.add(data.packetId);
+        if (seenPacketIds.size > 800) {
+          const oldest = seenPacketIds.values().next().value;
+          seenPacketIds.delete(oldest);
+        }
+      }
+
+      if (data.type === 'PACKET_CHUNK') {
+        const { transferId, chunkIndex, totalChunks, chunkData } = data;
+        if (!incomingChunkBuffers.has(transferId)) {
+          incomingChunkBuffers.set(transferId, {
+            chunks: new Array(totalChunks),
+            received: 0,
+            total: totalChunks
+          });
+        }
+        const entry = incomingChunkBuffers.get(transferId);
+        if (typeof entry.chunks[chunkIndex] === 'undefined') {
+          entry.chunks[chunkIndex] = chunkData;
+          entry.received++;
+        }
+        if (entry.received === entry.total) {
+          incomingChunkBuffers.delete(transferId);
+          try {
+            const fullJson = entry.chunks.join('');
+            const reconstructed = JSON.parse(fullJson);
+            processIncomingPacket(reconstructed, transportSource);
+          } catch (e) {}
+        }
+        return;
+      }
+
+      processIncomingPacket(data, transportSource);
+    }
+
+    function processIncomingPacket(data, transportSource) {
+      // Block any non-operator spoofing BATMAN
+      if (!data.isOperator && isReservedOwnerName(normalizePeerHandleToName(data.handle))) {
+        data.handle = `[IMPERSONATOR_${String(data.senderId || '00').slice(-3).toUpperCase()}]`;
+      }
+
+      const isNewPeer = !remotePeers.has(data.senderId);
+      remotePeers.set(data.senderId, {
+        handle: data.handle || '[REMOTE_NODE]',
+        isOperator: data.isOperator || false,
+        lastSeen: Date.now(),
+        transport: transportSource
+      });
+
+      // Live P2P Collision Resolution: if a remote non-operator peer already has our exact handle, auto-resolve if they joined earlier
+      if (!isOperator && data.handle && data.handle.toUpperCase() === myHandle.toUpperCase() && data.senderId < localClientId) {
+        const oldHandle = myHandle;
+        const resolved = suggestUniqueUsername(savedCustomUsername || 'NODE');
+        savedCustomUsername = resolved;
+        writeUsernameCookie(resolved);
+        myHandle = `[${resolved}]`;
+        document.getElementById('handle-display').textContent = myHandle;
+        appendSystemLine(`[AUTO-COLLISION GUARD] Another peer was already using ${oldHandle}. Updated your unique ID to ${myHandle}.`, 'warning');
+        broadcastPresence('PRESENCE_PING');
+      }
+
+      if (data.peerId) {
+        connectToRemotePeerId(data.peerId);
+      }
+
+      if (isNewPeer) {
+        playConnectChime();
+        appendSystemLine(`[DEVICE LINKED] ${data.handle || '[REMOTE_NODE]'} connected on frequency [${roomId.toUpperCase()}] via ${transportSource}.`, 'highlight');
+        updateConnectionUI();
+      }
+
+      switch (data.type) {
+        case 'PRESENCE_PING':
+          sendPacket({
+            type: 'PRESENCE_PONG',
+            handle: myHandle,
+            isOperator,
+            peerId: myPeerId
+          });
+          updateConnectionUI();
+          break;
+
+        case 'PRESENCE_PONG':
+        case 'PRESENCE_HEARTBEAT':
+          updateConnectionUI();
+          break;
+
+        case 'RENAME_NOTICE':
+          appendSystemLine(`[IDENTITY CHANGE] ${data.oldHandle || 'A peer'} is now known as ${data.handle}`, 'dim');
+          updateConnectionUI();
+          break;
+
+        case 'PING_TEST':
+          sendPacket({
+            type: 'PONG_REPLY',
+            handle: myHandle,
+            sentAt: data.sentAt
+          });
+          appendSystemLine(`[PING] Received connection check from ${data.handle}. Replying...`, 'dim');
+          break;
+
+        case 'PONG_REPLY': {
+          const rtt = Math.max(1, Date.now() - (data.sentAt || Date.now()));
+          playBeep(1020, 0.07, 'sine');
+          appendSystemLine(`[PONG] Verified live link with ${data.handle} // Latency: ${rtt}ms (${transportSource})`, 'highlight');
+          break;
+        }
+
+        case 'CHAT_MSG':
+          hideTypingIndicator();
+          playBeep(780, 0.06, 'square');
+          renderChatMessage({
+            handle: data.handle,
+            text: data.text,
+            plainText: data.plainText,
+            isCipher: data.isCipher,
+            isOperatorMsg: data.isOperator,
+            timestamp: data.timestamp,
+            isSelf: false
+          });
+          break;
+
+        case 'IMAGE_MSG':
+          hideTypingIndicator();
+          playBeep(840, 0.08, 'square');
+          renderImageMessage({
+            handle: data.handle,
+            imageData: data.imageData,
+            isOperatorMsg: data.isOperator,
+            timestamp: data.timestamp,
+            isSelf: false
+          });
+          break;
+
+        case 'VOICE_MSG':
+          hideTypingIndicator();
+          playBeep(680, 0.09, 'square');
+          renderVoiceMessage({
+            handle: data.handle,
+            audioData: data.audioData,
+            duration: data.duration,
+            isOperatorMsg: data.isOperator,
+            timestamp: data.timestamp,
+            isSelf: false
+          });
+          break;
+
+        case 'TYPING':
+          showTypingIndicator(data.handle);
+          break;
+
+        case 'BURN_SESSION':
+          executeLocalBurn(data.handle);
+          break;
+
+        case 'ROOM_LOCK_STATE':
+          isRoomLocked = data.locked;
+          appendSystemLine(`[SECURITY] Room frequency is now ${isRoomLocked ? 'LOCKED 🔒' : 'UNLOCKED 🔓'} by Operator.`, isRoomLocked ? 'warning' : 'highlight');
+          break;
+
+        case 'KICK_USER':
+          if (data.targetHandle && myHandle.toLowerCase().includes(data.targetHandle.toLowerCase())) {
+            appendSystemLine(`[WARNING] You have been ejected from this frequency by Operator. Scrambling frequency...`, 'danger');
+            playBeep(150, 0.4, 'sawtooth');
+            setTimeout(() => setRoomFrequency(generateRandomCode(), false), 1200);
+          }
+          break;
+
+        case 'BROADCAST_ALERT':
+          triggerGlobalBroadcastBanner(data.message, data.handle);
+          break;
+      }
+    }
+
+    function sendPingTest() {
+      initAudio();
+      playBeep(880, 0.05);
+      const peerCount = remotePeers.size;
+      if (peerCount === 0) {
+        appendSystemLine(`[NETWORK STATUS] Room: ${roomId.toUpperCase()} | No second device linked yet. Open this same code (${roomId.toUpperCase()}) on your other device!`, 'warning');
+        broadcastPresence('PRESENCE_PING');
+        return;
+      }
+      appendSystemLine(`[PING] Sending latency probe to ${peerCount} connected device(s)...`, 'dim');
+      sendPacket({
+        type: 'PING_TEST',
+        handle: myHandle,
+        sentAt: Date.now()
+      });
+    }
+
+    function pruneStalePeers() {
+      const now = Date.now();
+      let changed = false;
+      remotePeers.forEach((info, id) => {
+        if (now - info.lastSeen > 14000) {
+          remotePeers.delete(id);
+          changed = true;
+        }
+      });
+      if (changed) updateConnectionUI();
+    }
+
+    function updateConnectionUI() {
+      const badge = document.getElementById('conn-badge');
+      const dot = document.getElementById('conn-dot');
+      const text = document.getElementById('conn-text');
+
+      const peerCount = remotePeers.size;
+      const connectedBrokers = mqttClients.filter(c => c && c.connected).length;
+      const webrtcOpen = Boolean(peer && !peer.destroyed && myPeerId);
+
+      if (peerCount > 0) {
+        badge.className = 'cursor-pointer flex items-center space-x-2 px-2.5 py-1 rounded border border-[#00ff41] bg-[#002b0f] text-[#00ff41] text-xs glow-box';
+        dot.className = 'w-2 h-2 rounded-full bg-[#00ff41] animate-ping';
+        text.textContent = `LINKED // ${peerCount} DEVICE${peerCount > 1 ? 'S' : ''} ONLINE`;
+      } else if (connectedBrokers > 0 || webrtcOpen) {
+        badge.className = 'cursor-pointer flex items-center space-x-2 px-2.5 py-1 rounded border border-emerald-500/60 bg-[#001f0b] text-emerald-300 text-xs';
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+        text.textContent = `READY // SHARE CODE: ${roomId.toUpperCase()}`;
+      } else {
+        badge.className = 'cursor-pointer flex items-center space-x-2 px-2.5 py-1 rounded border border-amber-500/50 bg-amber-950/30 text-amber-400 text-xs';
+        dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
+        text.textContent = 'CONNECTING TUNNEL...';
+      }
+    }
+
+    // ==========================================
+    // EXCLUSIVE OWNER CONTROLS
+    // ==========================================
+    function ownerActionLock() {
+      if (!isOperator) return;
+      isRoomLocked = true;
+      sendPacket({ type: 'ROOM_LOCK_STATE', locked: true, handle: myHandle });
+      appendSystemLine(`[★ OPERATOR] Room frequency locked. No new messages permitted.`, 'warning');
+      playBeep(520, 0.1);
+    }
+
+    function ownerActionUnlock() {
+      if (!isOperator) return;
+      isRoomLocked = false;
+      sendPacket({ type: 'ROOM_LOCK_STATE', locked: false, handle: myHandle });
+      appendSystemLine(`[★ OPERATOR] Room frequency unlocked.`, 'highlight');
+      playBeep(880, 0.1);
+    }
+
+    function ownerActionGlobalBurn() {
+      if (!isOperator) return;
+      sendPacket({ type: 'BURN_SESSION', handle: myHandle });
+      executeLocalBurn(myHandle);
+    }
+
+    function openBroadcastModal() {
+      if (!isOperator) return;
+      playBeep(760, 0.05);
+      const modal = document.getElementById('broadcast-modal');
+      const inp = document.getElementById('broadcast-modal-input');
+      inp.value = '';
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => inp.focus(), 50);
+    }
+
+    function closeBroadcastModal() {
+      const modal = document.getElementById('broadcast-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function submitBroadcastModal(e) {
+      e.preventDefault();
+      if (!isOperator) return;
+      const inp = document.getElementById('broadcast-modal-input');
+      const msg = inp.value.trim();
+      if (!msg) return;
+      closeBroadcastModal();
+      triggerGlobalBroadcastBanner(msg, myHandle);
+      sendPacket({ type: 'BROADCAST_ALERT', message: msg, handle: myHandle });
+    }
+
+    function triggerGlobalBroadcastBanner(message, senderHandle) {
+      playBeep(330, 0.2, 'sawtooth');
+      setTimeout(() => playBeep(660, 0.2, 'sawtooth'), 220);
+      document.getElementById('broadcast-text').textContent = `[★ ${senderHandle}] BROADCAST: ${message}`;
+      document.getElementById('broadcast-banner').classList.remove('hidden');
+    }
+
+    function dismissBroadcast() {
+      document.getElementById('broadcast-banner').classList.add('hidden');
+    }
+
+    // ==========================================
+    // TERMINAL MESSAGE RENDERING
+    // ==========================================
+    function encodeToRunes(str) {
+      return str
+        .toUpperCase()
+        .split('')
+        .map(ch => CIPHER_MAP[ch] || ch)
+        .join('');
+    }
+
+    function decodeFromRunes(str) {
+      return str
+        .split('')
+        .map(ch => REVERSE_CIPHER_MAP[ch] || ch)
+        .join('');
+    }
+
+    function appendSystemLine(text, style = 'normal') {
+      const div = document.createElement('div');
+      let colorClass = 'text-emerald-400/90';
+      if (style === 'highlight') colorClass = 'text-[#00ff41] font-bold';
+      if (style === 'warning') colorClass = 'text-amber-400 font-bold';
+      if (style === 'danger') colorClass = 'text-red-500 font-bold';
+      if (style === 'dim') colorClass = 'text-emerald-600 text-xs';
+
+      div.className = `${colorClass} font-mono break-words`;
+      div.textContent = text;
+      outputEl.appendChild(div);
+      scrollToBottom();
+    }
+
+    function renderChatMessage({ handle, text, plainText, isCipher, isOperatorMsg, timestamp, isSelf, isBot = false }) {
+      const row = document.createElement('div');
+      row.className = `p-2.5 rounded border ${
+        isSelf
+          ? (isOperator ? 'border-yellow-500/70 bg-[#141200]/80 operator-glow' : 'border-emerald-800/60 bg-[#021206]/70')
+          : isOperatorMsg
+          ? 'border-yellow-500/80 bg-[#141200]/90 operator-glow'
+          : isBot
+          ? 'border-emerald-500/50 bg-[#011c09]/80'
+          : 'border-[#00ff41]/60 bg-[#00240b]/60 glow-box'
+      }`;
+
+      const header = document.createElement('div');
+      header.className = 'flex items-center justify-between text-xs mb-1';
+
+      const authorSpan = document.createElement('span');
+      authorSpan.className = isOperatorMsg || (isSelf && isOperator) ? 'text-yellow-400 font-bold' : (isSelf ? 'text-emerald-400 font-bold' : 'text-[#00ff41] font-bold');
+      authorSpan.textContent = `${handle} ${isSelf ? '(YOU)' : ''}`;
+
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'text-emerald-600 text-[11px]';
+      timeSpan.textContent = timestamp || new Date().toLocaleTimeString([], { hour12: false });
+
+      header.appendChild(authorSpan);
+      header.appendChild(timeSpan);
+
+      const body = document.createElement('div');
+      body.className = 'text-sm sm:text-base text-[#00ff41] break-words tracking-wide';
+      if (isOperatorMsg || (isSelf && isOperator)) body.className = 'text-sm sm:text-base text-yellow-200 break-words tracking-wide';
+
+      if (isCipher) {
+        const cipherSpan = document.createElement('span');
+        cipherSpan.className = 'tracking-widest text-emerald-300 font-bold mr-3';
+        cipherSpan.textContent = text;
+
+        const decodeBtn = document.createElement('button');
+        decodeBtn.className = 'text-[11px] px-2 py-0.5 border border-[#00ff41] rounded bg-[#003311] hover:bg-[#00ff41] hover:text-black font-bold transition';
+        decodeBtn.textContent = '[DECRYPT GLYPHS]';
+        decodeBtn.onclick = () => {
+          playBeep(1040, 0.07);
+          cipherSpan.textContent = plainText || decodeFromRunes(text);
+          cipherSpan.className = 'text-[#00ff41] font-bold';
+          decodeBtn.remove();
+        };
+
+        body.appendChild(cipherSpan);
+        body.appendChild(decodeBtn);
+      } else {
+        body.textContent = text;
+      }
+
+      row.appendChild(header);
+      row.appendChild(body);
+      outputEl.appendChild(row);
+      scrollToBottom();
+    }
+
+    // ==========================================
+    // PICTURE TRANSMISSION & RENDERING
+    // ==========================================
+    function triggerImageSelect() {
+      initAudio();
+      playBeep(740, 0.04);
+      document.getElementById('image-input').click();
+    }
+
+    function handleImageSelect(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      processAndSendImageFile(file);
+      event.target.value = '';
+    }
+
+    window.addEventListener('paste', (e) => {
+      if (!e.clipboardData || !e.clipboardData.items) return;
+      for (const item of e.clipboardData.items) {
+        if (item.type.indexOf('image') !== -1) {
+          const file = item.getAsFile();
+          if (file) {
+            e.preventDefault();
+            processAndSendImageFile(file);
+            break;
+          }
+        }
+      }
+    });
+
+    function processAndSendImageFile(file) {
+      if (!file.type.startsWith('image/')) {
+        showToast('INVALID IMAGE FILE');
+        return;
+      }
+
+      appendSystemLine(`[COMPRESSING & TRANSMITTING IMAGE PACKET...]`, 'dim');
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 540;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height && width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.70);
+          const timestamp = new Date().toLocaleTimeString([], { hour12: false });
+
+          playBeep(920, 0.06, 'triangle');
+          renderImageMessage({
+            handle: myHandle,
+            imageData: compressedDataUrl,
+            isOperatorMsg: isOperator,
+            timestamp,
+            isSelf: true
+          });
+
+          sendPacket({
+            type: 'IMAGE_MSG',
+            handle: myHandle,
+            imageData: compressedDataUrl,
+            isOperator,
+            timestamp
+          });
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderImageMessage({ handle, imageData, isOperatorMsg, timestamp, isSelf }) {
+      const row = document.createElement('div');
+      row.className = `p-2.5 rounded border ${
+        isSelf
+          ? (isOperator ? 'border-yellow-500/70 bg-[#141200]/80 operator-glow' : 'border-emerald-800/60 bg-[#021206]/70')
+          : isOperatorMsg
+          ? 'border-yellow-500/80 bg-[#141200]/90 operator-glow'
+          : 'border-[#00ff41]/60 bg-[#00240b]/60 glow-box'
+      }`;
+
+      const header = document.createElement('div');
+      header.className = 'flex items-center justify-between text-xs mb-2';
+
+      const authorSpan = document.createElement('span');
+      authorSpan.className = isOperatorMsg || (isSelf && isOperator) ? 'text-yellow-400 font-bold' : (isSelf ? 'text-emerald-400 font-bold' : 'text-[#00ff41] font-bold');
+      authorSpan.textContent = `${handle} ${isSelf ? '(YOU)' : ''} // [IMAGE_PACKET]`;
+
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'text-emerald-600 text-[11px]';
+      timeSpan.textContent = timestamp || new Date().toLocaleTimeString([], { hour12: false });
+
+      header.appendChild(authorSpan);
+      header.appendChild(timeSpan);
+
+      const imgWrap = document.createElement('div');
+      imgWrap.className = 'relative inline-block group cursor-pointer rounded overflow-hidden border border-[#00ff41]/50 bg-black';
+      imgWrap.onclick = () => openImageModal(imageData, handle);
+
+      const imgEl = document.createElement('img');
+      imgEl.src = imageData;
+      imgEl.alt = 'Encrypted Attachment';
+      imgEl.className = 'max-h-60 sm:max-h-72 w-auto object-contain block transition duration-200';
+
+      const actionBar = document.createElement('div');
+      actionBar.className = 'flex items-center justify-between px-2 py-1 bg-[#010d04]/90 border-t border-[#00ff41]/30 text-[11px] gap-3';
+
+      const zoomHint = document.createElement('span');
+      zoomHint.className = 'text-emerald-400';
+      zoomHint.textContent = '[CLICK TO EXPAND]';
+
+      const crtFilterBtn = document.createElement('button');
+      crtFilterBtn.type = 'button';
+      crtFilterBtn.className = 'text-[#00ff41] hover:underline font-bold';
+      crtFilterBtn.textContent = 'CRT TINT: OFF';
+      let crtTintOn = false;
+      crtFilterBtn.onclick = (ev) => {
+        ev.stopPropagation();
+        crtTintOn = !crtTintOn;
+        imgEl.style.filter = crtTintOn ? 'sepia(100%) hue-rotate(75deg) saturate(260%) contrast(115%)' : 'none';
+        crtFilterBtn.textContent = crtTintOn ? 'CRT TINT: ON' : 'CRT TINT: OFF';
+      };
+
+      actionBar.appendChild(zoomHint);
+      actionBar.appendChild(crtFilterBtn);
+
+      imgWrap.appendChild(imgEl);
+      imgWrap.appendChild(actionBar);
+
+      row.appendChild(header);
+      row.appendChild(imgWrap);
+      outputEl.appendChild(row);
+      scrollToBottom();
+    }
+
+    function openImageModal(imageData, senderHandle) {
+      playBeep(820, 0.04);
+      document.getElementById('image-modal-preview').src = imageData;
+      document.getElementById('image-download-link').href = imageData;
+      document.getElementById('image-modal-title').textContent = `IMAGE PACKET // FROM ${senderHandle || 'PEER'}`;
+      const modal = document.getElementById('image-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeImageModal() {
+      const modal = document.getElementById('image-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // ==========================================
+    // VOICE NOTE RECORDING & PLAYER
+    // ==========================================
+    function formatDuration(seconds) {
+      const s = Math.max(0, Math.floor(seconds || 0));
+      const mins = String(Math.floor(s / 60)).padStart(2, '0');
+      const secs = String(s % 60).padStart(2, '0');
+      return `${mins}:${secs}`;
+    }
+
+    async function toggleVoiceRecording() {
+      initAudio();
+      if (isRecordingVoice) {
+        stopVoiceRecording(true);
+      } else {
+        await startVoiceRecording();
+      }
+    }
+
+    async function startVoiceRecording() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        appendSystemLine(`[ERROR] Audio recording requires HTTPS or localhost.`, 'danger');
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+        shouldSendRecordedVoice = false;
+
+        try {
+          mediaRecorder = new MediaRecorder(stream, { audioBitsPerSecond: 18000 });
+        } catch (e) {
+          mediaRecorder = new MediaRecorder(stream);
+        }
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) {
+            audioChunks.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          stream.getTracks().forEach(track => track.stop());
+          const elapsedSeconds = Math.max(1, Math.round((Date.now() - voiceStartTime) / 1000));
+
+          if (!shouldSendRecordedVoice || audioChunks.length === 0) {
+            appendSystemLine(`[VOICE RECORDING CANCELLED]`, 'dim');
+            return;
+          }
+
+          const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64Audio = reader.result;
+            const timestamp = new Date().toLocaleTimeString([], { hour12: false });
+
+            playBeep(940, 0.06, 'triangle');
+            renderVoiceMessage({
+              handle: myHandle,
+              audioData: base64Audio,
+              duration: elapsedSeconds,
+              isOperatorMsg: isOperator,
+              timestamp,
+              isSelf: true
+            });
+
+            sendPacket({
+              type: 'VOICE_MSG',
+              handle: myHandle,
+              audioData: base64Audio,
+              duration: elapsedSeconds,
+              isOperator,
+              timestamp
+            });
+          };
+          reader.readAsDataURL(audioBlob);
+        };
+
+        mediaRecorder.start();
+        isRecordingVoice = true;
+        voiceStartTime = Date.now();
+        playBeep(520, 0.08, 'sine');
+
+        document.getElementById('voice-rec-bar').classList.remove('hidden');
+        const voiceBtn = document.getElementById('voice-btn');
+        voiceBtn.textContent = '[STOP & SEND]';
+        voiceBtn.classList.add('border-red-500', 'bg-red-950/60', 'text-red-300');
+
+        const timerEl = document.getElementById('voice-timer');
+        timerEl.textContent = '00:00';
+        if (voiceTimerInterval) clearInterval(voiceTimerInterval);
+        voiceTimerInterval = setInterval(() => {
+          const secs = Math.floor((Date.now() - voiceStartTime) / 1000);
+          timerEl.textContent = formatDuration(secs);
+          if (secs >= 40) stopVoiceRecording(true);
+        }, 250);
+      } catch (err) {
+        appendSystemLine(`[MICROPHONE ACCESS DENIED] Please allow microphone access in your browser settings.`, 'warning');
+      }
+    }
+
+    function stopVoiceRecording(shouldSend = true) {
+      if (!isRecordingVoice || !mediaRecorder) return;
+      shouldSendRecordedVoice = shouldSend;
+      isRecordingVoice = false;
+
+      if (voiceTimerInterval) {
+        clearInterval(voiceTimerInterval);
+        voiceTimerInterval = null;
+      }
+
+      document.getElementById('voice-rec-bar').classList.add('hidden');
+      const voiceBtn = document.getElementById('voice-btn');
+      voiceBtn.textContent = '[VOICE]';
+      voiceBtn.classList.remove('border-red-500', 'bg-red-950/60', 'text-red-300');
+
+      try {
+        if (mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+        }
+      } catch (e) {}
+    }
+
+    function renderVoiceMessage({ handle, audioData, duration, isOperatorMsg, timestamp, isSelf }) {
+      const row = document.createElement('div');
+      row.className = `p-2.5 rounded border ${
+        isSelf
+          ? (isOperator ? 'border-yellow-500/70 bg-[#141200]/80 operator-glow' : 'border-emerald-800/60 bg-[#021206]/70')
+          : isOperatorMsg
+          ? 'border-yellow-500/80 bg-[#141200]/90 operator-glow'
+          : 'border-[#00ff41]/60 bg-[#00240b]/60 glow-box'
+      }`;
+
+      const header = document.createElement('div');
+      header.className = 'flex items-center justify-between text-xs mb-1.5';
+
+      const authorSpan = document.createElement('span');
+      authorSpan.className = isOperatorMsg || (isSelf && isOperator) ? 'text-yellow-400 font-bold' : (isSelf ? 'text-emerald-400 font-bold' : 'text-[#00ff41] font-bold');
+      authorSpan.textContent = `${handle} ${isSelf ? '(YOU)' : ''} // [VOICE_NOTE]`;
+
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'text-emerald-600 text-[11px]';
+      timeSpan.textContent = timestamp || new Date().toLocaleTimeString([], { hour12: false });
+
+      header.appendChild(authorSpan);
+      header.appendChild(timeSpan);
+
+      const audio = new Audio(audioData);
+      let isDisguisedPitch = false;
+
+      const playerBox = document.createElement('div');
+      playerBox.className = 'flex flex-wrap items-center gap-2.5 bg-black/70 border border-[#00ff41]/40 px-3 py-2 rounded';
+
+      const playBtn = document.createElement('button');
+      playBtn.type = 'button';
+      playBtn.className = 'px-2.5 py-1 rounded border border-[#00ff41] bg-[#002b0f] hover:bg-[#00ff41] hover:text-black text-xs font-bold transition shrink-0';
+      playBtn.textContent = '[▶ PLAY]';
+
+      const progressWrap = document.createElement('div');
+      progressWrap.className = 'flex-1 min-w-[120px] h-2.5 bg-[#001a07] border border-[#00ff41]/40 rounded overflow-hidden cursor-pointer';
+
+      const progressBar = document.createElement('div');
+      progressBar.className = 'h-full bg-[#00ff41] w-0 transition-all duration-100';
+      progressWrap.appendChild(progressBar);
+
+      const timeLabel = document.createElement('span');
+      timeLabel.className = 'text-xs font-mono text-[#00ff41] shrink-0';
+      timeLabel.textContent = `00:00 / ${formatDuration(duration || 1)}`;
+
+      const maskBtn = document.createElement('button');
+      maskBtn.type = 'button';
+      maskBtn.className = 'text-[11px] px-2 py-0.5 rounded border subtle-border bg-[#001806] hover:bg-[#003311] text-emerald-300 transition shrink-0';
+      maskBtn.textContent = 'PITCH: 1.0x';
+
+      maskBtn.onclick = () => {
+        isDisguisedPitch = !isDisguisedPitch;
+        if ('preservesPitch' in audio) audio.preservesPitch = false;
+        if ('mozPreservesPitch' in audio) audio.mozPreservesPitch = false;
+        if ('webkitPreservesPitch' in audio) audio.webkitPreservesPitch = false;
+        audio.playbackRate = isDisguisedPitch ? 0.78 : 1.0;
+        maskBtn.textContent = isDisguisedPitch ? 'PITCH: DEEP' : 'PITCH: 1.0x';
+        maskBtn.classList.toggle('border-[#00ff41]', isDisguisedPitch);
+      };
+
+      playBtn.onclick = () => {
+        if (audio.paused) {
+          audio.play();
+          playBtn.textContent = '[⏸ PAUSE]';
+        } else {
+          audio.pause();
+          playBtn.textContent = '[▶ PLAY]';
+        }
+      };
+
+      audio.ontimeupdate = () => {
+        const total = (audio.duration && isFinite(audio.duration)) ? audio.duration : (duration || 1);
+        const pct = Math.min(100, (audio.currentTime / total) * 100);
+        progressBar.style.width = `${pct}%`;
+        timeLabel.textContent = `${formatDuration(audio.currentTime)} / ${formatDuration(total)}`;
+      };
+
+      audio.onended = () => {
+        playBtn.textContent = '[▶ PLAY]';
+        progressBar.style.width = '0%';
+      };
+
+      progressWrap.onclick = (e) => {
+        const total = (audio.duration && isFinite(audio.duration)) ? audio.duration : (duration || 1);
+        const rect = progressWrap.getBoundingClientRect();
+        const clickRatio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        audio.currentTime = clickRatio * total;
+      };
+
+      playerBox.appendChild(playBtn);
+      playerBox.appendChild(progressWrap);
+      playerBox.appendChild(timeLabel);
+      playerBox.appendChild(maskBtn);
+
+      row.appendChild(header);
+      row.appendChild(playerBox);
+      outputEl.appendChild(row);
+      scrollToBottom();
+    }
+
+    // ==========================================
+    // FORM SUBMIT & SLASH COMMANDS
+    // ==========================================
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      const raw = inputEl.value.trim();
+      if (!raw) return;
+
+      initAudio();
+      playBeep(640, 0.04, 'triangle');
+      inputEl.value = '';
+
+      if (raw.startsWith('/')) {
+        handleSlashCommand(raw);
+        return;
+      }
+
+      if (isValidOwnerPassword(raw)) {
+        activateOperatorMode(true);
+        return;
+      }
+
+      if (isRoomLocked && !isOperator) {
+        appendSystemLine(`[ROOM LOCKED] Frequency code is locked by Operator. New messages blocked.`, 'warning');
+        return;
+      }
+
+      const outgoingText = cipherMode ? encodeToRunes(raw) : raw;
+      const timestamp = new Date().toLocaleTimeString([], { hour12: false });
+
+      renderChatMessage({
+        handle: myHandle,
+        text: outgoingText,
+        plainText: raw,
+        isCipher: cipherMode,
+        isOperatorMsg: isOperator,
+        timestamp,
+        isSelf: true
+      });
+
+      sendPacket({
+        type: 'CHAT_MSG',
+        handle: myHandle,
+        text: outgoingText,
+        plainText: raw,
+        isCipher: cipherMode,
+        isOperator,
+        timestamp
+      });
+
+      if (botMode === 'ON' || (botMode === 'AUTO' && remotePeers.size === 0)) {
+        triggerRiddlerAutoReply(raw);
+      }
+    }
+
+    function triggerRiddlerAutoReply(userText) {
+      setTimeout(() => {
+        if (botMode === 'AUTO' && remotePeers.size > 0) return;
+
+        showTypingIndicator('[?_RIDDLER_NODE]');
+        setTimeout(() => {
+          hideTypingIndicator();
+          if (botMode === 'AUTO' && remotePeers.size > 0) return;
+
+          playBeep(780, 0.06, 'square');
+          const lower = userText.toLowerCase();
+          let reply = RIDDLER_RESPONSES[riddlerIdx % RIDDLER_RESPONSES.length];
+          riddlerIdx++;
+
+          if (lower.includes('hi') || lower.includes('hello') || lower.includes('hey')) {
+            reply = `<?> GREETINGS, ${myHandle}. YOUR FREQUENCY CODE IS [ ${roomId.toUpperCase()} ]. ENTER THIS EXACT CODE ON YOUR SECOND DEVICE USING 'JOIN FRIEND'S CODE' TO LINK LIVE.`;
+          }
+
+          renderChatMessage({
+            handle: '[?_RIDDLER_NODE]',
+            text: reply,
+            timestamp: new Date().toLocaleTimeString([], { hour12: false }),
+            isSelf: false,
+            isBot: true
+          });
+        }, 650);
+      }, 250);
+    }
+
+    function handleSlashCommand(raw) {
+      const parts = raw.trim().split(/\s+/);
+      const cmd = parts[0].toLowerCase();
+      const args = parts.slice(1).join(' ').trim();
+
+      switch (cmd) {
+        case '/op':
+          verifyAndActivateOperator(args);
+          break;
+
+        case '/deop':
+          ownerDeop();
+          break;
+
+        case '/genkey':
+          if (!args) {
+            appendSystemLine(`Usage: /genkey [your-new-password]`, 'warning');
+          } else {
+            const bytes = encodeSecretBytes(args.toLowerCase());
+            appendSystemLine(`[KEY GENERATOR] Obfuscated byte array for your new secret key:`, 'highlight');
+            appendSystemLine(`const OWNER_SECRET_BYTES = [${bytes.join(', ')}];`, 'highlight');
+          }
+          break;
+
+        case '/kick':
+          if (!isOperator) {
+            appendSystemLine(`[ACCESS DENIED] /kick command requires [★ OPERATOR] owner privileges.`, 'warning');
+            return;
+          }
+          if (!args) {
+            appendSystemLine(`Usage: /kick [handle]`, 'warning');
+            return;
+          }
+          sendPacket({ type: 'KICK_USER', targetHandle: args, handle: myHandle });
+          appendSystemLine(`[★ OPERATOR] Ejected ${args} from frequency.`, 'warning');
+          break;
+
+        case '/mute':
+          if (!isOperator) {
+            appendSystemLine(`[ACCESS DENIED] /mute command requires [★ OPERATOR] owner privileges.`, 'warning');
+            return;
+          }
+          if (!args) {
+            appendSystemLine(`Usage: /mute [handle]`, 'warning');
+            return;
+          }
+          mutedUsers.add(args.toUpperCase());
+          appendSystemLine(`[★ OPERATOR] Muted transmissions from ${args.toUpperCase()}.`, 'warning');
+          break;
+
+        case '/unmute':
+          if (!isOperator) {
+            appendSystemLine(`[ACCESS DENIED] /unmute command requires [★ OPERATOR] owner privileges.`, 'warning');
+            return;
+          }
+          if (!args) {
+            appendSystemLine(`Usage: /unmute [handle]`, 'warning');
+            return;
+          }
+          mutedUsers.delete(args.toUpperCase());
+          appendSystemLine(`[★ OPERATOR] Unmuted transmissions from ${args.toUpperCase()}.`, 'highlight');
+          break;
+
+        case '/lock':
+          if (!isOperator) {
+            appendSystemLine(`[ACCESS DENIED] /lock command requires [★ OPERATOR] owner privileges.`, 'warning');
+            return;
+          }
+          ownerActionLock();
+          break;
+
+        case '/unlock':
+          if (!isOperator) {
+            appendSystemLine(`[ACCESS DENIED] /unlock command requires [★ OPERATOR] owner privileges.`, 'warning');
+            return;
+          }
+          ownerActionUnlock();
+          break;
+
+        case '/broadcast':
+          if (!isOperator) {
+            appendSystemLine(`[ACCESS DENIED] /broadcast command requires [★ OPERATOR] owner privileges.`, 'warning');
+            return;
+          }
+          if (!args) {
+            openBroadcastModal();
+            return;
+          }
+          triggerGlobalBroadcastBanner(args, myHandle);
+          sendPacket({ type: 'BROADCAST_ALERT', message: args, handle: myHandle });
+          break;
+
+        case '/help':
+          appendSystemLine(`=== RATAALADA-CHAT v4.7 TERMINAL COMMANDS ===`, 'highlight');
+          appendSystemLine(`/name [new_name]- Set or change your saved username (or click ID: [NAME] ✎)`);
+          appendSystemLine(`/login          - Open the Terminal Identity Login box`);
+          appendSystemLine(`/join [code]    - Connect to another device's 6-digit Frequency Code`);
+          appendSystemLine(`/ping           - Test round-trip connection speed with linked device`);
+          appendSystemLine(`/status         - Show detailed P2P WebRTC & WSS Relay diagnostics`);
+          appendSystemLine(`/cipher [text]  - Send a message encrypted in substitution glyphs`);
+          appendSystemLine(`/decode [runes] - Translate cipher glyphs back into plain text`);
+          appendSystemLine(`/bot            - Toggle Riddler AI auto-responder (AUTO / ON / OFF)`);
+          appendSystemLine(`/burn           - Wipe chat history on your screen (or all screens if Operator)`);
+          appendSystemLine(`/op             - Open secure masked password prompt for [★ OPERATOR]`);
+          if (isOperator) {
+            appendSystemLine(`/kick [handle]  - Eject a user from the room frequency`, 'warning');
+            appendSystemLine(`/mute [handle]  - Block a user's messages`, 'warning');
+            appendSystemLine(`/lock / unlock  - Freeze or open room frequency access`, 'warning');
+            appendSystemLine(`/broadcast [msg]- Flash emergency red alert banner on all screens`, 'warning');
+            appendSystemLine(`/genkey [secret]- Generate a new encoded byte array for your password`, 'warning');
+          }
+          break;
+
+        case '/join':
+          if (!args) openJoinModal();
+          else processJoinInput(args);
+          break;
+
+        case '/ping':
+          sendPingTest();
+          break;
+
+        case '/status': {
+          const connectedBrokers = mqttClients.filter(c => c && c.connected).length;
+          appendSystemLine(`=== MESH DIAGNOSTICS [ROOM: ${roomId.toUpperCase()}] ===`, 'highlight');
+          appendSystemLine(`> SAVED IDENTITY: ${myHandle}`);
+          appendSystemLine(`> WSS RELAY BROKERS ONLINE: ${connectedBrokers} / ${mqttClients.length}`);
+          appendSystemLine(`> WEBRTC P2P SLOT: ${myPeerId || 'INITIALIZING'} (${activePeerConns.size} direct channels)`);
+          appendSystemLine(`> LINKED REMOTE DEVICES: ${remotePeers.size}`);
+          appendSystemLine(`> OPERATOR MODE: ${isOperator ? 'ACTIVE [★]' : 'INACTIVE'}`);
+          break;
+        }
+
+        case '/bot':
+          toggleRiddlerBot();
+          break;
+
+        case '/cipher':
+          if (!args) {
+            toggleCipherMode();
+          } else {
+            const encoded = encodeToRunes(args);
+            const timestamp = new Date().toLocaleTimeString([], { hour12: false });
+            renderChatMessage({
+              handle: myHandle,
+              text: encoded,
+              plainText: args,
+              isCipher: true,
+              isOperatorMsg: isOperator,
+              timestamp,
+              isSelf: true
+            });
+            sendPacket({
+              type: 'CHAT_MSG',
+              handle: myHandle,
+              text: encoded,
+              plainText: args,
+              isCipher: true,
+              isOperator,
+              timestamp
+            });
+          }
+          break;
+
+        case '/decode':
+          if (!args) appendSystemLine(`Usage: /decode [glyphs]`, 'warning');
+          else appendSystemLine(`[DECRYPTED OUTPUT]: ${decodeFromRunes(args)}`, 'highlight');
+          break;
+
+        case '/login':
+        case '/name':
+        case '/handle':
+          if (isOperator) {
+            appendSystemLine(`[★ BATMAN] Your Owner identity is permanently fixed as ${OWNER_FIXED_HANDLE} so everyone knows you are the Owner.`, 'highlight');
+            return;
+          }
+          if (!args) {
+            openUsernameModal(false);
+          } else {
+            const clean = sanitizeUsername(args);
+            const check = checkUsernameAvailability(clean);
+            if (!check.available) {
+              playBeep(180, 0.25, 'sawtooth');
+              if (check.reason === 'RESERVED_OWNER') {
+                appendSystemLine(`[ACCESS DENIED] "${clean}" is permanently reserved for the Website Owner [★ BATMAN].`, 'danger');
+              } else if (check.reason === 'TAKEN_IN_ROOM' || check.reason === 'TAKEN_GLOBAL') {
+                appendSystemLine(`[USERNAME TAKEN] "${clean}" is already in use! Try "${suggestUniqueUsername(clean)}" instead.`, 'warning');
+              } else {
+                appendSystemLine(`[ERROR] Username must be between 2 and 18 characters.`, 'warning');
+              }
+              return;
+            }
+            const oldHandle = myHandle;
+            savedCustomUsername = clean;
+            writeUsernameCookie(clean);
+            myHandle = `[${clean}]`;
+            document.getElementById('handle-display').textContent = myHandle;
+            appendSystemLine(`[UNIQUE IDENTITY CLAIMED] Saved fixed username as ${myHandle}`, 'highlight');
+            sendPacket({
+              type: 'RENAME_NOTICE',
+              oldHandle,
+              handle: myHandle,
+              isOperator
+            });
+            broadcastPresence('PRESENCE_PING');
+          }
+          break;
+
+        case '/burn':
+          burnSession();
+          break;
+
+        case '/clear':
+          outputEl.innerHTML = '';
+          appendSystemLine(`[LOCAL CONSOLE BUFFER CLEARED]`, 'dim');
+          break;
+
+        default:
+          appendSystemLine(`[UNKNOWN COMMAND]: ${cmd}. Type /help for available commands.`, 'warning');
+      }
+    }
+
+    function toggleCipherMode() {
+      cipherMode = !cipherMode;
+      const btn = document.getElementById('cipher-toggle-btn');
+      const stateEl = document.getElementById('cipher-state');
+      stateEl.textContent = cipherMode ? 'ON (GLYPHS)' : 'OFF';
+      btn.classList.toggle('border-[#00ff41]', cipherMode);
+      btn.classList.toggle('bg-[#003b14]', cipherMode);
+      playBeep(cipherMode ? 960 : 540, 0.06);
+    }
+
+    function burnSession() {
+      if (isOperator) {
+        sendPacket({ type: 'BURN_SESSION', handle: myHandle });
+        executeLocalBurn(myHandle);
+      } else {
+        playBeep(220, 0.25, 'sawtooth');
+        outputEl.innerHTML = '';
+        appendSystemLine(`[LOCAL CONSOLE BUFFER PURGED] (Unlock [★ OPERATOR] to burn across all connected screens)`, 'warning');
+      }
+    }
+
+    function executeLocalBurn(initiator) {
+      playBeep(220, 0.35, 'sawtooth');
+      outputEl.innerHTML = '';
+      appendSystemLine(`========================================================`, 'danger');
+      appendSystemLine(`[ ! ] EMERGENCY PROTOCOL: SESSION BURNED BY ${initiator}`, 'danger');
+      appendSystemLine(`[ ! ] ALL TERMINAL LOGS PURGED FROM MEMORY.`, 'danger');
+      appendSystemLine(`========================================================`, 'danger');
+    }
+
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key.length === 1 || e.key === 'Backspace') {
+        playKeySound();
+        if (!inputEl.value.trim().startsWith('/')) {
+          sendPacket({ type: 'TYPING', handle: myHandle });
+        }
+      }
+    });
+
+    function showTypingIndicator(handle) {
+      const el = document.getElementById('typing-indicator');
+      el.textContent = `▶ ${handle || 'REMOTE PEER'} IS TYPING...`;
+      el.classList.remove('hidden');
+      if (typingTimeout) clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(hideTypingIndicator, 2200);
+    }
+
+    function hideTypingIndicator() {
+      document.getElementById('typing-indicator').classList.add('hidden');
+    }
+
+    // ==========================================
+    // MODALS & CLIPBOARD HELPERS
+    // ==========================================
+    function openShareModal() {
+      playBeep(880, 0.05);
+      const modal = document.getElementById('share-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeShareModal() {
+      const modal = document.getElementById('share-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function openJoinModal() {
+      playBeep(880, 0.05);
+      const modal = document.getElementById('join-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => document.getElementById('join-code-input').focus(), 50);
+    }
+
+    function closeJoinModal() {
+      const modal = document.getElementById('join-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function submitJoinModal(e) {
+      e.preventDefault();
+      const val = document.getElementById('join-code-input').value.trim();
+      if (!val) return;
+      document.getElementById('join-code-input').value = '';
+      closeJoinModal();
+      processJoinInput(val);
+    }
+
+    function processJoinInput(input) {
+      let target = input.trim();
+      if (target.includes('room=')) {
+        target = target.split('room=')[1].split('&')[0].split('#')[0];
+      } else if (target.includes('#')) {
+        target = target.split('#')[1];
+      }
+      setRoomFrequency(target, false);
+    }
+
+    async function copyTextToClipboard(text, message) {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+          showToast(message);
+          return;
+        }
+      } catch (e) {}
+
+      const temp = document.createElement('textarea');
+      temp.value = text;
+      document.body.appendChild(temp);
+      temp.select();
+      try {
+        document.execCommand('copy');
+        showToast(message);
+      } catch (e) {
+        showToast('PRESS CTRL+C TO COPY');
+      }
+      document.body.removeChild(temp);
+    }
+
+    function copyFreqCode() {
+      copyTextToClipboard(roomId.toUpperCase(), `FREQUENCY CODE [${roomId.toUpperCase()}] COPIED!`);
+    }
+
+    function copyInviteLink() {
+      copyTextToClipboard(getShareUrl(), 'INVITE URL COPIED!');
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 2600);
+    }
+
+    function scrollToBottom() {
+      outputEl.scrollTop = outputEl.scrollHeight;
+    }
+
+    function focusInput() {
+      if (window.getSelection().toString().length === 0) {
+        inputEl.focus();
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeShareModal();
+        closeJoinModal();
+        closeImageModal();
+        closeOpAuthModal();
+        closeBroadcastModal();
+        // Allow closing username modal if user already has a saved username
+        if (savedCustomUsername) closeUsernameModal();
+      }
+    });
+
+    // Boot Sequence on Window Load
+    window.onload = function () {
+      const storedCookieName = readUsernameCookie();
+      if (storedCookieName) {
+        savedCustomUsername = storedCookieName;
+        myHandle = `[${storedCookieName}]`;
+      } else {
+        myHandle = HANDLES[0];
+      }
+      document.getElementById('handle-display').textContent = myHandle;
+
+      const initialRoom = extractRoomFromUrl();
+      setRoomFrequency(initialRoom, true);
+
+      const bootLines = [
+        `> INITIALIZING RATAALADA-CHAT MESH v4.7... [OK]`,
+        `> PORT-443 WSS RELAY + WEBRTC P2P ENCRYPTION... [OK]`,
+        `> ACTIVE FREQUENCY CODE: [ ${roomId.toUpperCase()} ]`,
+        savedCustomUsername
+          ? `> WELCOME BACK, ${myHandle}. (CLICK "ID: ${myHandle} ✎" ANYTIME TO CHANGE USERNAME)`
+          : `> [ ? ] TERMINAL READY. PLEASE LOG IN WITH YOUR CODENAME TO BEGIN.`
+      ];
+
+      bootLines.forEach((line, idx) => {
+        setTimeout(() => {
+          appendSystemLine(line, idx === bootLines.length - 1 ? 'highlight' : 'dim');
+        }, idx * 120);
+      });
+
+      if (!savedCustomUsername) {
+        // Show the initial Username Login box so the user picks their fixed codename
+        setTimeout(() => openUsernameModal(true), 350);
+      } else {
+        inputEl.focus();
+      }
+    };
+  </script>
+</body>
+</html>
