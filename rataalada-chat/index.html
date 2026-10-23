@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: wss: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://api.qrserver.com https://placehold.co; media-src 'self' data: blob:; connect-src 'self' https: wss:;" />
   <title>rataalada-chat // encrypted terminal</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -664,7 +663,7 @@
     const localClientId = 'node_' + Math.random().toString(36).substring(2, 10);
     const seenPacketIds = new Set();
     const incomingChunkBuffers = new Map();
-    const remotePeers = new Map(); // Tracks connected remote peers in the room
+    const remotePeers = new Map();
 
     const GLOBAL_DIRECTORY_TOPIC = 'rataaldachat/v48/global_usernames_query';
     const GLOBAL_CLAIM_PREFIX = 'rataaldachat/v48/claims/';
@@ -1311,11 +1310,11 @@
     function getShareUrl() {
       try {
         if (window.location.protocol === 'blob:' || window.location.protocol === 'about:') {
-          return `https://rataalda-chat.vercel.app/?room=${roomId}`;
+          return `https://rataalada-chat.vercel.app/?room=${roomId}`;
         }
         return `${window.location.origin}${window.location.pathname}?room=${roomId}`;
       } catch (e) {
-        return `https://rataalda-chat.vercel.app/?room=${roomId}`;
+        return `https://rataalada-chat.vercel.app/?room=${roomId}`;
       }
     }
 
