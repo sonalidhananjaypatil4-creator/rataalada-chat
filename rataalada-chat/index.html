@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: wss: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://api.qrserver.com https://placehold.co; media-src 'self' data: blob:; connect-src 'self' https: wss:;" />
   <title>rataalada-chat // encrypted terminal</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -131,11 +134,14 @@
       <button onclick="ownerActionUnlock()" class="px-2 py-0.5 rounded border border-yellow-500 bg-yellow-950/40 text-yellow-300 hover:bg-yellow-400 hover:text-black font-bold transition">
         🔓 UNLOCK
       </button>
-      <button onclick="ownerActionGlobalBurn()" class="px-2 py-0.5 rounded border border-red-500 bg-red-950/50 text-red-400 hover:bg-red-600 hover:text-black font-bold transition">
-        🔥 GLOBAL BURN
+      <button onclick="ownerActionRoomBurn()" title="Wipe chat history in this current frequency only" class="px-2 py-0.5 rounded border border-orange-500 bg-orange-950/50 text-orange-300 hover:bg-orange-500 hover:text-black font-bold transition">
+        🔥 ROOM BURN
       </button>
-      <button onclick="openBroadcastModal()" class="px-2 py-0.5 rounded border border-yellow-500 bg-yellow-950/40 text-yellow-300 hover:bg-yellow-400 hover:text-black font-bold transition">
-        📢 BROADCAST
+      <button onclick="ownerActionSiteWideBurn()" title="EMERGENCY: Wipe all terminals across ALL frequencies on the entire website" class="px-2 py-0.5 rounded border border-red-500 bg-red-950/80 text-red-300 hover:bg-red-600 hover:text-black font-bold transition animate-pulse">
+        ☢️ SITE-WIDE BURN (ALL FREQS)
+      </button>
+      <button onclick="openBroadcastModal()" title="Broadcast emergency alert across ALL frequencies on the website" class="px-2 py-0.5 rounded border border-yellow-500 bg-yellow-950/40 text-yellow-300 hover:bg-yellow-400 hover:text-black font-bold transition">
+        📢 SITE-WIDE BROADCAST
       </button>
       <button onclick="ownerDeop()" class="px-2 py-0.5 rounded border border-neutral-600 bg-neutral-900 text-neutral-300 hover:bg-neutral-800 transition">
         DEOP
@@ -152,9 +158,9 @@
       <div>
         <div class="flex items-center space-x-2">
           <h1 class="text-sm sm:text-base font-bold tracking-widest uppercase">RATAALADA-CHAT</h1>
-          <span class="text-[10px] px-1.5 py-0.5 rounded bg-[#00290d] border border-[#00ff41]/40 text-[#00ff41]">MESH_v4.7</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-[#00290d] border border-[#00ff41]/40 text-[#00ff41]">SEC_MESH_v5.0</span>
         </div>
-        <p class="text-[11px] text-emerald-500/80 tracking-wider hidden sm:block">CROSS-DEVICE P2P ENCRYPTED TERMINAL</p>
+        <p class="text-[11px] text-emerald-500/80 tracking-wider hidden sm:block">HARDENED P2P ENCRYPTED TERMINAL</p>
       </div>
     </div>
 
@@ -412,28 +418,34 @@
       <div class="flex items-center justify-between border-b border-red-600/40 pb-3 mb-4">
         <div class="flex items-center space-x-2">
           <span class="text-red-500 text-lg font-bold">📢</span>
-          <h2 class="text-sm sm:text-base font-bold tracking-widest uppercase text-red-400">EMERGENCY SYSTEM BROADCAST</h2>
+          <h2 class="text-sm sm:text-base font-bold tracking-widest uppercase text-red-400">SITE-WIDE EMERGENCY BROADCAST</h2>
         </div>
         <button onclick="closeBroadcastModal()" class="text-red-400 hover:text-white px-2 py-0.5 border border-red-600/50 rounded text-xs">ESC</button>
       </div>
 
       <form onsubmit="submitBroadcastModal(event)" class="space-y-4">
         <p class="text-xs text-red-200/80 leading-relaxed">
-          Transmit a flashing red alert banner across all connected terminals on this frequency:
+          Transmit a flashing red emergency alert across <b>EVERY terminal on the entire website</b> (regardless of which 6-digit frequency code they are tuned to):
         </p>
         <input
           id="broadcast-modal-input"
           type="text"
           autocomplete="off"
-          placeholder="ENTER ALERT MESSAGE..."
+          placeholder="ENTER SITE-WIDE ALERT MESSAGE..."
           class="w-full bg-black border-2 border-red-500 px-3 py-2.5 rounded text-sm font-bold tracking-wider text-red-300 uppercase focus:outline-none"
         />
+        <div class="flex items-center justify-between text-[11px] text-red-300/80">
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input id="broadcast-scope-global" type="checkbox" checked class="accent-red-500" />
+            <span>TRANSMIT ACROSS ALL FREQUENCIES SITE-WIDE</span>
+          </label>
+        </div>
         <div class="flex justify-end space-x-2">
           <button type="button" onclick="closeBroadcastModal()" class="px-3 py-1.5 rounded border border-red-700/60 text-red-400 text-xs hover:bg-red-950/50">
             CANCEL
           </button>
           <button type="submit" class="px-4 py-1.5 rounded border border-red-500 bg-red-500 text-black font-bold text-xs tracking-wider hover:bg-red-400 transition">
-            TRANSMIT ALERT
+            TRANSMIT SITE-WIDE [⏎]
           </button>
         </div>
       </form>
@@ -529,6 +541,7 @@
       </div>
     </div>
   </div>
+
   <!-- Cloud Profile & Global Unique Username Registry Module -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -540,7 +553,6 @@
     let currentUser = null;
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'rataaldachat-default';
 
-    // Map of UPPERCASE_USERNAME -> ownerIdentifier (uid or localClientId)
     window.cloudUsernameDirectory = new Map();
 
     async function initCloudIdentitySync() {
@@ -562,7 +574,6 @@
           if (!currentUser) return;
           window.currentCloudUid = currentUser.uid;
 
-          // Listen to public directory of claimed usernames so no two users can pick the same name
           try {
             const registryCol = collection(db, 'artifacts', appId, 'public', 'data', 'usernames');
             onSnapshot(
@@ -636,7 +647,7 @@
     const RESERVED_OWNER_NAMES = new Set(['BATMAN', 'THE_BATMAN', 'THEBATMAN', 'OPERATOR', 'OWNER', 'ADMIN', 'BRUCE_WAYNE']);
 
     let currentHandleIndex = 0;
-    let savedCustomUsername = ''; // Stores regular user's fixed/custom username without brackets
+    let savedCustomUsername = '';
     let myHandle = HANDLES[0];
     let roomId = '';
     let cipherMode = false;
@@ -653,9 +664,16 @@
     const localClientId = 'node_' + Math.random().toString(36).substring(2, 10);
     const seenPacketIds = new Set();
     const incomingChunkBuffers = new Map();
-    const remotePeers = new Map();
+    const remotePeers = new Map(); // Tracks connected remote peers in the room
 
-    // Multi-Transport Networking State
+    const GLOBAL_DIRECTORY_TOPIC = 'rataaldachat/v48/global_usernames_query';
+    const GLOBAL_CLAIM_PREFIX = 'rataaldachat/v48/claims/';
+    const GLOBAL_SYSOP_TOPIC = 'rataaldachat/v50/global_sysop_command';
+    const globalActiveUsernames = new Map();
+    let usernameCheckDebounce = null;
+    let isDirectorySynced = false;
+    let globalBroadcastChannel = null;
+
     let mqttClients = [];
     let mqttTopic = '';
     let peer = null;
@@ -667,7 +685,6 @@
     let slotScanInterval = null;
     let typingTimeout = null;
 
-    // Voice Recording State
     let mediaRecorder = null;
     let audioChunks = [];
     let isRecordingVoice = false;
@@ -730,7 +747,6 @@
         };
       }
 
-      // 1. Check if reserved exclusively for Operator (BATMAN)
       if (isReservedOwnerName(clean)) {
         if (isOperator && clean === OWNER_FIXED_NAME) {
           return {
@@ -746,7 +762,17 @@
         };
       }
 
-      // 2. Check active P2P/WSS peers in the room
+      if (globalActiveUsernames.has(clean)) {
+        const entry = globalActiveUsernames.get(clean);
+        if (entry && entry.ownerId && entry.ownerId !== localClientId) {
+          return {
+            available: false,
+            reason: 'TAKEN_GLOBAL_LIVE',
+            message: '✕ NOT AVAILABLE (IN USE)'
+          };
+        }
+      }
+
       for (const [peerSenderId, info] of remotePeers.entries()) {
         if (peerSenderId === localClientId) continue;
         const peerClean = normalizePeerHandleToName(info.handle);
@@ -754,12 +780,11 @@
           return {
             available: false,
             reason: 'TAKEN_IN_ROOM',
-            message: '✕ TAKEN BY CONNECTED PEER'
+            message: '✕ NOT AVAILABLE (IN USE)'
           };
         }
       }
 
-      // 3. Check global Cloud Registry (if loaded)
       if (window.cloudUsernameDirectory && window.cloudUsernameDirectory.has(clean)) {
         const ownerId = window.cloudUsernameDirectory.get(clean);
         const myUid = window.currentCloudUid || localClientId;
@@ -767,7 +792,7 @@
           return {
             available: false,
             reason: 'TAKEN_GLOBAL',
-            message: '✕ ALREADY CLAIMED'
+            message: '✕ NOT AVAILABLE (CLAIMED)'
           };
         }
       }
@@ -777,6 +802,52 @@
         reason: 'AVAILABLE',
         message: '✓ AVAILABLE'
       };
+    }
+
+    function publishGlobalUsernameClaim(cleanName, oldName = '') {
+      const upper = sanitizeUsername(cleanName);
+      if (!upper || isReservedOwnerName(upper)) return;
+
+      globalActiveUsernames.set(upper, {
+        ownerId: localClientId,
+        timestamp: Date.now()
+      });
+
+      const claimPayload = JSON.stringify({
+        type: 'USERNAME_CLAIM',
+        username: upper,
+        ownerId: localClientId,
+        timestamp: Date.now()
+      });
+
+      mqttClients.forEach((client) => {
+        if (client && client.connected) {
+          try {
+            if (oldName && oldName !== upper) {
+              client.publish(`${GLOBAL_CLAIM_PREFIX}${oldName}`, '', { qos: 0, retain: true });
+            }
+            client.publish(`${GLOBAL_CLAIM_PREFIX}${upper}`, claimPayload, { qos: 0, retain: true });
+            client.publish(GLOBAL_DIRECTORY_TOPIC, claimPayload, { qos: 0 });
+          } catch (e) {}
+        }
+      });
+    }
+
+    function probeGlobalUsernameAvailability(cleanName) {
+      const upper = sanitizeUsername(cleanName);
+      if (!upper || upper.length < 2) return;
+      const queryPayload = JSON.stringify({
+        type: 'WHO_HAS_USERNAME',
+        username: upper,
+        requesterId: localClientId
+      });
+      mqttClients.forEach((client) => {
+        if (client && client.connected) {
+          try {
+            client.publish(GLOBAL_DIRECTORY_TOPIC, queryPayload, { qos: 0 });
+          } catch (e) {}
+        }
+      });
     }
 
     function suggestUniqueUsername(baseName) {
@@ -802,6 +873,15 @@
       const submitBtn = document.getElementById('username-submit-btn');
       if (!input || !badge) return;
 
+      const cleanTyped = sanitizeUsername(input.value);
+
+      if (cleanTyped.length >= 2) {
+        if (usernameCheckDebounce) clearTimeout(usernameCheckDebounce);
+        usernameCheckDebounce = setTimeout(() => {
+          probeGlobalUsernameAvailability(cleanTyped);
+        }, 90);
+      }
+
       const status = checkUsernameAvailability(input.value);
       badge.textContent = status.message;
 
@@ -810,12 +890,19 @@
         input.classList.remove('border-red-500', 'text-red-400');
         input.classList.add('border-[#00ff41]', 'text-[#00ff41]');
         errEl.classList.add('hidden');
-        if (submitBtn) submitBtn.disabled = false;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-40', 'cursor-not-allowed');
+        }
       } else {
         badge.className = 'text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-950/70 border border-red-500 text-red-300';
         if (input.value.trim().length > 0) {
           input.classList.remove('border-[#00ff41]', 'text-[#00ff41]');
           input.classList.add('border-red-500', 'text-red-400');
+        }
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.classList.add('opacity-40', 'cursor-not-allowed');
         }
       }
     };
@@ -837,7 +924,7 @@
       return '';
     }
 
-    function writeUsernameCookie(cleanName) {
+    function writeUsernameCookie(cleanName, oldName = '') {
       if (isReservedOwnerName(cleanName)) return;
       try {
         document.cookie = `rata_username=${encodeURIComponent(cleanName)}; path=/; max-age=31536000; SameSite=Lax`;
@@ -845,6 +932,7 @@
       try {
         window.name = `RATA_USER:${cleanName}`;
       } catch (e) {}
+      publishGlobalUsernameClaim(cleanName, oldName);
       if (typeof window.saveUsernameToCloud === 'function') {
         window.saveUsernameToCloud(cleanName, localClientId);
       }
@@ -923,7 +1011,6 @@
 
     function fillPresetUsername(preset) {
       const input = document.getElementById('username-input');
-      // If plain preset is available, use it; otherwise append a unique 2-digit node code
       const checkPlain = checkUsernameAvailability(preset);
       input.value = checkPlain.available ? preset : suggestUniqueUsername(preset);
       handleUsernameLiveInput();
@@ -942,9 +1029,9 @@
         errEl.classList.remove('hidden');
         if (check.reason === 'RESERVED_OWNER') {
           errEl.textContent = '[ACCESS DENIED] "BATMAN" is permanently reserved for the Website Owner (/op).';
-        } else if (check.reason === 'TAKEN_IN_ROOM' || check.reason === 'TAKEN_GLOBAL') {
+        } else if (check.reason === 'TAKEN_IN_ROOM' || check.reason === 'TAKEN_GLOBAL' || check.reason === 'TAKEN_GLOBAL_LIVE') {
           const suggestion = suggestUniqueUsername(clean);
-          errEl.textContent = `"${clean}" is already taken! Try "${suggestion}" instead.`;
+          errEl.textContent = `"${clean}" is NOT AVAILABLE! Try "${suggestion}" instead.`;
         } else {
           errEl.textContent = 'Please enter a valid username (2–18 characters).';
         }
@@ -952,8 +1039,9 @@
       }
 
       const previousHandle = myHandle;
+      const oldCleanName = savedCustomUsername;
       savedCustomUsername = clean;
-      writeUsernameCookie(clean);
+      writeUsernameCookie(clean, oldCleanName);
 
       if (!isOperator) {
         myHandle = `[${clean}]`;
@@ -974,7 +1062,7 @@
           isOperator
         });
       } else {
-        appendSystemLine(`[IDENTITY VERIFIED] Logged in as ${myHandle}. (Click "ID: ${myHandle} ✎" or type /name anytime to change)`, 'highlight');
+        appendSystemLine(`[IDENTITY VERIFIED] Logged in as ${myHandle}.`, 'highlight');
       }
 
       broadcastPresence('PRESENCE_PING');
@@ -1058,17 +1146,12 @@
       botMode = states[(states.indexOf(botMode) + 1) % states.length];
       document.getElementById('bot-label').textContent = botMode;
       playBeep(760, 0.05);
-      appendSystemLine(`[RIDDLER BOT MODE]: ${botMode} ${botMode === 'AUTO' ? '(Steps aside automatically as soon as another device links)' : ''}`, 'dim');
+      appendSystemLine(`[RIDDLER BOT MODE]: ${botMode}`, 'dim');
     }
 
     // ==========================================
-    // RELIABLE XOR-ENCODED OWNER AUTHENTICATION
+    // OWNER AUTHENTICATION
     // ==========================================
-    function encodeSecretBytes(str) {
-      const clean = String(str || '').trim();
-      return Array.from(clean).map(ch => ch.charCodeAt(0) ^ OWNER_XOR_SALT);
-    }
-
     function isValidOwnerPassword(inputStr) {
       if (!inputStr) return false;
       const normalized = String(inputStr)
@@ -1150,7 +1233,7 @@
     function activateOperatorMode(notify = true) {
       const oldHandle = myHandle;
       isOperator = true;
-      myHandle = OWNER_FIXED_HANDLE; // Always fixed as [★ BATMAN] for the Owner
+      myHandle = OWNER_FIXED_HANDLE;
       const handleEl = document.getElementById('handle-display');
       handleEl.textContent = myHandle;
       handleEl.className = 'font-bold underline text-yellow-400';
@@ -1160,7 +1243,6 @@
         playOperatorChime();
         appendSystemLine(`========================================================`, 'highlight');
         appendSystemLine(`[★] OWNER ACCESS GRANTED. IDENTITY LOCKED AS ${OWNER_FIXED_HANDLE}.`, 'highlight');
-        appendSystemLine(`[★] EXCLUSIVE CONTROLS UNLOCKED AT TOP OF TERMINAL.`, 'highlight');
         appendSystemLine(`========================================================`, 'highlight');
       }
       if (oldHandle !== myHandle) {
@@ -1194,18 +1276,6 @@
         handle: myHandle,
         isOperator: false
       });
-      broadcastPresence('PRESENCE_PING');
-    }
-
-    function ownerDeop() {
-      isOperator = false;
-      myHandle = savedCustomUsername ? `[${savedCustomUsername}]` : HANDLES[0];
-      const handleEl = document.getElementById('handle-display');
-      handleEl.textContent = myHandle;
-      handleEl.className = 'font-bold underline';
-      document.getElementById('owner-control-bar').classList.add('hidden');
-      playBeep(300, 0.15);
-      appendSystemLine(`[OPERATOR MODE EXITED] Returned to saved handle ${myHandle}.`, 'dim');
       broadcastPresence('PRESENCE_PING');
     }
 
@@ -1283,7 +1353,7 @@
     }
 
     // ==========================================
-    // v4.6 TRIPLE-REDUNDANCY CROSS-DEVICE MESH
+    // MULTI-TRANSPORT MESH NETWORKING
     // ==========================================
     function initMultiTransportNetworking() {
       if (heartbeatInterval) clearInterval(heartbeatInterval);
@@ -1315,6 +1385,15 @@
           if (event.data) handleRawIncomingData(event.data, 'LOCAL_TAB');
         };
       } catch (e) {}
+
+      if (!globalBroadcastChannel) {
+        try {
+          globalBroadcastChannel = new BroadcastChannel('rataaldachat_v50_global_sysop');
+          globalBroadcastChannel.onmessage = (event) => {
+            if (event.data) handleGlobalSysopPacket(event.data);
+          };
+        } catch (e) {}
+      }
 
       initMultiBrokerWss();
       initWebRtcSlotMesh(0);
@@ -1352,9 +1431,82 @@
                 broadcastPresence('PRESENCE_PING');
               }
             });
+
+            client.subscribe(`${GLOBAL_CLAIM_PREFIX}+`, { qos: 0 });
+            client.subscribe(GLOBAL_SYSOP_TOPIC, { qos: 0 });
+            client.subscribe(GLOBAL_DIRECTORY_TOPIC, { qos: 0 }, () => {
+              isDirectorySynced = true;
+              if (savedCustomUsername && !isOperator) {
+                publishGlobalUsernameClaim(savedCustomUsername);
+              }
+              try {
+                client.publish(GLOBAL_DIRECTORY_TOPIC, JSON.stringify({
+                  type: 'SYNC_ALL_USERNAMES',
+                  requesterId: localClientId
+                }), { qos: 0 });
+              } catch (e) {}
+            });
           });
 
           client.on('message', (topic, messageBuffer) => {
+            if (topic === GLOBAL_SYSOP_TOPIC) {
+              try {
+                const sysopPacket = JSON.parse(messageBuffer.toString());
+                handleGlobalSysopPacket(sysopPacket);
+              } catch (e) {}
+              return;
+            }
+
+            if (topic.startsWith(GLOBAL_CLAIM_PREFIX)) {
+              const claimedUser = topic.slice(GLOBAL_CLAIM_PREFIX.length).toUpperCase();
+              const rawStr = messageBuffer.toString();
+              if (!rawStr) {
+                globalActiveUsernames.delete(claimedUser);
+              } else {
+                try {
+                  const data = JSON.parse(rawStr);
+                  if (data && data.username && data.ownerId) {
+                    globalActiveUsernames.set(String(data.username).toUpperCase(), {
+                      ownerId: data.ownerId,
+                      timestamp: data.timestamp || Date.now()
+                    });
+                  }
+                } catch (e) {}
+              }
+              if (typeof window.handleUsernameLiveInput === 'function') {
+                window.handleUsernameLiveInput();
+              }
+              return;
+            }
+
+            if (topic === GLOBAL_DIRECTORY_TOPIC) {
+              try {
+                const payload = JSON.parse(messageBuffer.toString());
+                if (!payload) return;
+
+                if (payload.type === 'USERNAME_CLAIM' && payload.username && payload.ownerId) {
+                  globalActiveUsernames.set(String(payload.username).toUpperCase(), {
+                    ownerId: payload.ownerId,
+                    timestamp: payload.timestamp || Date.now()
+                  });
+                  if (typeof window.handleUsernameLiveInput === 'function') {
+                    window.handleUsernameLiveInput();
+                  }
+                } else if (payload.type === 'WHO_HAS_USERNAME' && payload.requesterId !== localClientId) {
+                  const myClean = isOperator ? OWNER_FIXED_NAME : savedCustomUsername;
+                  if (myClean && String(payload.username).toUpperCase() === myClean.toUpperCase()) {
+                    client.publish(GLOBAL_DIRECTORY_TOPIC, JSON.stringify({
+                      type: 'USERNAME_CLAIM',
+                      username: myClean.toUpperCase(),
+                      ownerId: localClientId,
+                      timestamp: Date.now()
+                    }), { qos: 0 });
+                  }
+                }
+              } catch (e) {}
+              return;
+            }
+
             if (topic !== mqttTopic) return;
             try {
               const parsed = JSON.parse(messageBuffer.toString());
@@ -1378,9 +1530,7 @@
         startPeerWithId(`rata45-${roomId}-${localClientId}`, -1);
         return;
       }
-
-      const candidateId = getSlotPeerId(trySlot);
-      startPeerWithId(candidateId, trySlot);
+      startPeerWithId(getSlotPeerId(trySlot), trySlot);
     }
 
     function startPeerWithId(candidateId, slotIdx) {
@@ -1390,8 +1540,7 @@
           config: {
             iceServers: [
               { urls: 'stun:stun.l.google.com:19302' },
-              { urls: 'stun:stun1.l.google.com:19302' },
-              { urls: 'stun:global.stun.twilio.com:3478' }
+              { urls: 'stun:stun1.l.google.com:19302' }
             ]
           }
         });
@@ -1425,8 +1574,7 @@
       if (!peer || peer.destroyed || peer.disconnected) return;
       for (let i = 0; i <= 3; i++) {
         if (i === mySlotIndex) continue;
-        const targetId = getSlotPeerId(i);
-        connectToRemotePeerId(targetId);
+        connectToRemotePeerId(getSlotPeerId(i));
       }
     }
 
@@ -1475,326 +1623,65 @@
     }
 
     // ==========================================
-    // PACKET CHUNKING & TRANSMISSION ENGINE
+    // EXCLUSIVE OWNER CONTROLS (ROOM & SITE-WIDE)
     // ==========================================
-    function broadcastPresence(type = 'PRESENCE_PING') {
-      sendPacket({
-        type,
-        handle: myHandle,
-        isOperator,
-        peerId: myPeerId
-      });
+    function verifyGlobalSysopToken(token) {
+      const expected = OWNER_SECRET_BYTES.map(b => String((b ^ OWNER_XOR_SALT) + 7)).join('-');
+      return token === expected;
     }
 
-    function sendPacket(packet) {
-      if (isRoomLocked && !isOperator && packet.type === 'CHAT_MSG') {
-        appendSystemLine(`[ROOM LOCKED] Frequency code is locked by Operator. New messages blocked.`, 'warning');
-        return;
-      }
+    function generateGlobalSysopToken() {
+      return OWNER_SECRET_BYTES.map(b => String((b ^ OWNER_XOR_SALT) + 7)).join('-');
+    }
 
-      const packetId = `${localClientId}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    function sendGlobalSysopPacket(packet) {
+      if (!isOperator) return;
+      const packetId = `sysop_${localClientId}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       seenPacketIds.add(packetId);
 
       const fullPayload = {
         ...packet,
         packetId,
-        roomId,
         senderId: localClientId,
-        isOperator,
-        timestamp: packet.timestamp || new Date().toLocaleTimeString([], { hour12: false })
+        handle: OWNER_FIXED_HANDLE,
+        sysopAuth: generateGlobalSysopToken(),
+        timestamp: new Date().toLocaleTimeString([], { hour12: false })
       };
 
-      const serialized = JSON.stringify(fullPayload);
-
-      const CHUNK_LIMIT = 24000;
-      if (serialized.length > CHUNK_LIMIT && packet.type !== 'PACKET_CHUNK') {
-        const totalChunks = Math.ceil(serialized.length / CHUNK_LIMIT);
-        const transferId = `tx_${packetId}`;
-        for (let i = 0; i < totalChunks; i++) {
-          const slice = serialized.slice(i * CHUNK_LIMIT, (i + 1) * CHUNK_LIMIT);
-          const chunkEnvelope = {
-            type: 'PACKET_CHUNK',
-            packetId: `${transferId}_c${i}`,
-            transferId,
-            chunkIndex: i,
-            totalChunks,
-            chunkData: slice,
-            roomId,
-            senderId: localClientId,
-            handle: myHandle
-          };
-          seenPacketIds.add(chunkEnvelope.packetId);
-          setTimeout(() => transmitRawEnvelope(chunkEnvelope), i * 35);
-        }
-        return;
+      if (globalBroadcastChannel) {
+        try { globalBroadcastChannel.postMessage(fullPayload); } catch (e) {}
       }
 
-      transmitRawEnvelope(fullPayload);
-    }
-
-    function transmitRawEnvelope(payload) {
-      if (broadcastChannel) {
-        try { broadcastChannel.postMessage(payload); } catch (e) {}
-      }
-
-      activePeerConns.forEach((conn) => {
-        if (conn && conn.open) {
-          try { conn.send(payload); } catch (e) {}
-        }
-      });
-
-      const str = JSON.stringify(payload);
+      const str = JSON.stringify(fullPayload);
       mqttClients.forEach((client) => {
-        if (client && client.connected && mqttTopic) {
+        if (client && client.connected) {
           try {
-            client.publish(mqttTopic, str, { qos: 0 });
+            client.publish(GLOBAL_SYSOP_TOPIC, str, { qos: 0 });
           } catch (e) {}
         }
       });
     }
 
-    function handleRawIncomingData(data, transportSource) {
-      if (!data || data.senderId === localClientId) return;
-      if (data.roomId && data.roomId !== roomId) return;
-      if (mutedUsers.has(data.handle)) return;
+    function handleGlobalSysopPacket(data) {
+      if (!data || !data.packetId) return;
+      if (seenPacketIds.has(data.packetId)) return;
+      seenPacketIds.add(data.packetId);
 
-      if (data.packetId) {
-        if (seenPacketIds.has(data.packetId)) return;
-        seenPacketIds.add(data.packetId);
-        if (seenPacketIds.size > 800) {
-          const oldest = seenPacketIds.values().next().value;
-          seenPacketIds.delete(oldest);
-        }
-      }
+      if (!verifyGlobalSysopToken(data.sysopAuth)) return;
 
-      if (data.type === 'PACKET_CHUNK') {
-        const { transferId, chunkIndex, totalChunks, chunkData } = data;
-        if (!incomingChunkBuffers.has(transferId)) {
-          incomingChunkBuffers.set(transferId, {
-            chunks: new Array(totalChunks),
-            received: 0,
-            total: totalChunks
-          });
-        }
-        const entry = incomingChunkBuffers.get(transferId);
-        if (typeof entry.chunks[chunkIndex] === 'undefined') {
-          entry.chunks[chunkIndex] = chunkData;
-          entry.received++;
-        }
-        if (entry.received === entry.total) {
-          incomingChunkBuffers.delete(transferId);
-          try {
-            const fullJson = entry.chunks.join('');
-            const reconstructed = JSON.parse(fullJson);
-            processIncomingPacket(reconstructed, transportSource);
-          } catch (e) {}
-        }
-        return;
-      }
-
-      processIncomingPacket(data, transportSource);
-    }
-
-    function processIncomingPacket(data, transportSource) {
-      // Block any non-operator spoofing BATMAN
-      if (!data.isOperator && isReservedOwnerName(normalizePeerHandleToName(data.handle))) {
-        data.handle = `[IMPERSONATOR_${String(data.senderId || '00').slice(-3).toUpperCase()}]`;
-      }
-
-      const isNewPeer = !remotePeers.has(data.senderId);
-      remotePeers.set(data.senderId, {
-        handle: data.handle || '[REMOTE_NODE]',
-        isOperator: data.isOperator || false,
-        lastSeen: Date.now(),
-        transport: transportSource
-      });
-
-      // Live P2P Collision Resolution: if a remote non-operator peer already has our exact handle, auto-resolve if they joined earlier
-      if (!isOperator && data.handle && data.handle.toUpperCase() === myHandle.toUpperCase() && data.senderId < localClientId) {
-        const oldHandle = myHandle;
-        const resolved = suggestUniqueUsername(savedCustomUsername || 'NODE');
-        savedCustomUsername = resolved;
-        writeUsernameCookie(resolved);
-        myHandle = `[${resolved}]`;
-        document.getElementById('handle-display').textContent = myHandle;
-        appendSystemLine(`[AUTO-COLLISION GUARD] Another peer was already using ${oldHandle}. Updated your unique ID to ${myHandle}.`, 'warning');
-        broadcastPresence('PRESENCE_PING');
-      }
-
-      if (data.peerId) {
-        connectToRemotePeerId(data.peerId);
-      }
-
-      if (isNewPeer) {
-        playConnectChime();
-        appendSystemLine(`[DEVICE LINKED] ${data.handle || '[REMOTE_NODE]'} connected on frequency [${roomId.toUpperCase()}] via ${transportSource}.`, 'highlight');
-        updateConnectionUI();
-      }
-
-      switch (data.type) {
-        case 'PRESENCE_PING':
-          sendPacket({
-            type: 'PRESENCE_PONG',
-            handle: myHandle,
-            isOperator,
-            peerId: myPeerId
-          });
-          updateConnectionUI();
-          break;
-
-        case 'PRESENCE_PONG':
-        case 'PRESENCE_HEARTBEAT':
-          updateConnectionUI();
-          break;
-
-        case 'RENAME_NOTICE':
-          appendSystemLine(`[IDENTITY CHANGE] ${data.oldHandle || 'A peer'} is now known as ${data.handle}`, 'dim');
-          updateConnectionUI();
-          break;
-
-        case 'PING_TEST':
-          sendPacket({
-            type: 'PONG_REPLY',
-            handle: myHandle,
-            sentAt: data.sentAt
-          });
-          appendSystemLine(`[PING] Received connection check from ${data.handle}. Replying...`, 'dim');
-          break;
-
-        case 'PONG_REPLY': {
-          const rtt = Math.max(1, Date.now() - (data.sentAt || Date.now()));
-          playBeep(1020, 0.07, 'sine');
-          appendSystemLine(`[PONG] Verified live link with ${data.handle} // Latency: ${rtt}ms (${transportSource})`, 'highlight');
-          break;
-        }
-
-        case 'CHAT_MSG':
-          hideTypingIndicator();
-          playBeep(780, 0.06, 'square');
-          renderChatMessage({
-            handle: data.handle,
-            text: data.text,
-            plainText: data.plainText,
-            isCipher: data.isCipher,
-            isOperatorMsg: data.isOperator,
-            timestamp: data.timestamp,
-            isSelf: false
-          });
-          break;
-
-        case 'IMAGE_MSG':
-          hideTypingIndicator();
-          playBeep(840, 0.08, 'square');
-          renderImageMessage({
-            handle: data.handle,
-            imageData: data.imageData,
-            isOperatorMsg: data.isOperator,
-            timestamp: data.timestamp,
-            isSelf: false
-          });
-          break;
-
-        case 'VOICE_MSG':
-          hideTypingIndicator();
-          playBeep(680, 0.09, 'square');
-          renderVoiceMessage({
-            handle: data.handle,
-            audioData: data.audioData,
-            duration: data.duration,
-            isOperatorMsg: data.isOperator,
-            timestamp: data.timestamp,
-            isSelf: false
-          });
-          break;
-
-        case 'TYPING':
-          showTypingIndicator(data.handle);
-          break;
-
-        case 'BURN_SESSION':
-          executeLocalBurn(data.handle);
-          break;
-
-        case 'ROOM_LOCK_STATE':
-          isRoomLocked = data.locked;
-          appendSystemLine(`[SECURITY] Room frequency is now ${isRoomLocked ? 'LOCKED 🔒' : 'UNLOCKED 🔓'} by Operator.`, isRoomLocked ? 'warning' : 'highlight');
-          break;
-
-        case 'KICK_USER':
-          if (data.targetHandle && myHandle.toLowerCase().includes(data.targetHandle.toLowerCase())) {
-            appendSystemLine(`[WARNING] You have been ejected from this frequency by Operator. Scrambling frequency...`, 'danger');
-            playBeep(150, 0.4, 'sawtooth');
-            setTimeout(() => setRoomFrequency(generateRandomCode(), false), 1200);
-          }
-          break;
-
-        case 'BROADCAST_ALERT':
-          triggerGlobalBroadcastBanner(data.message, data.handle);
-          break;
+      if (data.type === 'SITE_WIDE_BURN') {
+        executeLocalBurn(`${data.handle || OWNER_FIXED_HANDLE} [SITE-WIDE EMERGENCY PURGE // ALL FREQUENCIES]`);
+      } else if (data.type === 'SITE_WIDE_BROADCAST') {
+        triggerGlobalBroadcastBanner(data.message, `${data.handle || OWNER_FIXED_HANDLE} // ALL FREQUENCIES`);
+        appendSystemLine(`[📢 SITE-WIDE EMERGENCY BROADCAST FROM ${data.handle || OWNER_FIXED_HANDLE}]: ${data.message}`, 'danger');
       }
     }
 
-    function sendPingTest() {
-      initAudio();
-      playBeep(880, 0.05);
-      const peerCount = remotePeers.size;
-      if (peerCount === 0) {
-        appendSystemLine(`[NETWORK STATUS] Room: ${roomId.toUpperCase()} | No second device linked yet. Open this same code (${roomId.toUpperCase()}) on your other device!`, 'warning');
-        broadcastPresence('PRESENCE_PING');
-        return;
-      }
-      appendSystemLine(`[PING] Sending latency probe to ${peerCount} connected device(s)...`, 'dim');
-      sendPacket({
-        type: 'PING_TEST',
-        handle: myHandle,
-        sentAt: Date.now()
-      });
-    }
-
-    function pruneStalePeers() {
-      const now = Date.now();
-      let changed = false;
-      remotePeers.forEach((info, id) => {
-        if (now - info.lastSeen > 14000) {
-          remotePeers.delete(id);
-          changed = true;
-        }
-      });
-      if (changed) updateConnectionUI();
-    }
-
-    function updateConnectionUI() {
-      const badge = document.getElementById('conn-badge');
-      const dot = document.getElementById('conn-dot');
-      const text = document.getElementById('conn-text');
-
-      const peerCount = remotePeers.size;
-      const connectedBrokers = mqttClients.filter(c => c && c.connected).length;
-      const webrtcOpen = Boolean(peer && !peer.destroyed && myPeerId);
-
-      if (peerCount > 0) {
-        badge.className = 'cursor-pointer flex items-center space-x-2 px-2.5 py-1 rounded border border-[#00ff41] bg-[#002b0f] text-[#00ff41] text-xs glow-box';
-        dot.className = 'w-2 h-2 rounded-full bg-[#00ff41] animate-ping';
-        text.textContent = `LINKED // ${peerCount} DEVICE${peerCount > 1 ? 'S' : ''} ONLINE`;
-      } else if (connectedBrokers > 0 || webrtcOpen) {
-        badge.className = 'cursor-pointer flex items-center space-x-2 px-2.5 py-1 rounded border border-emerald-500/60 bg-[#001f0b] text-emerald-300 text-xs';
-        dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
-        text.textContent = `READY // SHARE CODE: ${roomId.toUpperCase()}`;
-      } else {
-        badge.className = 'cursor-pointer flex items-center space-x-2 px-2.5 py-1 rounded border border-amber-500/50 bg-amber-950/30 text-amber-400 text-xs';
-        dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
-        text.textContent = 'CONNECTING TUNNEL...';
-      }
-    }
-
-    // ==========================================
-    // EXCLUSIVE OWNER CONTROLS
-    // ==========================================
     function ownerActionLock() {
       if (!isOperator) return;
       isRoomLocked = true;
       sendPacket({ type: 'ROOM_LOCK_STATE', locked: true, handle: myHandle });
-      appendSystemLine(`[★ OPERATOR] Room frequency locked. No new messages permitted.`, 'warning');
+      appendSystemLine(`[★ OPERATOR] Room frequency locked.`, 'warning');
       playBeep(520, 0.1);
     }
 
@@ -1806,10 +1693,17 @@
       playBeep(880, 0.1);
     }
 
-    function ownerActionGlobalBurn() {
+    function ownerActionRoomBurn() {
       if (!isOperator) return;
       sendPacket({ type: 'BURN_SESSION', handle: myHandle });
-      executeLocalBurn(myHandle);
+      executeLocalBurn(`${myHandle} [FREQUENCY ${roomId.toUpperCase()}]`);
+    }
+
+    function ownerActionSiteWideBurn() {
+      if (!isOperator) return;
+      sendGlobalSysopPacket({ type: 'SITE_WIDE_BURN' });
+      sendPacket({ type: 'BURN_SESSION', handle: myHandle });
+      executeLocalBurn(`${myHandle} [SITE-WIDE EMERGENCY PURGE // ALL FREQUENCIES]`);
     }
 
     function openBroadcastModal() {
@@ -1833,11 +1727,19 @@
       e.preventDefault();
       if (!isOperator) return;
       const inp = document.getElementById('broadcast-modal-input');
+      const isGlobalScope = document.getElementById('broadcast-scope-global')?.checked !== false;
       const msg = inp.value.trim();
       if (!msg) return;
       closeBroadcastModal();
-      triggerGlobalBroadcastBanner(msg, myHandle);
-      sendPacket({ type: 'BROADCAST_ALERT', message: msg, handle: myHandle });
+
+      if (isGlobalScope) {
+        triggerGlobalBroadcastBanner(msg, `${myHandle} // ALL FREQUENCIES`);
+        appendSystemLine(`[📢 SITE-WIDE BROADCAST TRANSMITTED TO ALL FREQUENCIES]: ${msg}`, 'highlight');
+        sendGlobalSysopPacket({ type: 'SITE_WIDE_BROADCAST', message: msg });
+      } else {
+        triggerGlobalBroadcastBanner(msg, myHandle);
+        sendPacket({ type: 'BROADCAST_ALERT', message: msg, handle: myHandle });
+      }
     }
 
     function triggerGlobalBroadcastBanner(message, senderHandle) {
@@ -1852,21 +1754,169 @@
     }
 
     // ==========================================
-    // TERMINAL MESSAGE RENDERING
+    // PACKET ROUTING & BROADCASTING
+    // ==========================================
+    function broadcastPresence(type = 'PRESENCE_PING') {
+      sendPacket({
+        type,
+        packetId: `${localClientId}_${type}_${Date.now()}`,
+        roomId,
+        senderId: localClientId,
+        handle: myHandle,
+        isOperator,
+        peerId: myPeerId,
+        timestamp: new Date().toLocaleTimeString([], { hour12: false })
+      });
+    }
+
+    function sendPacket(payloadObj) {
+      const packetId = payloadObj.packetId || `${localClientId}_pkt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      seenPacketIds.add(packetId);
+
+      const fullPayload = {
+        ...payloadObj,
+        packetId,
+        senderId: localClientId,
+        roomId
+      };
+
+      if (broadcastChannel) {
+        try { broadcastChannel.postMessage(fullPayload); } catch (e) {}
+      }
+
+      const str = JSON.stringify(fullPayload);
+      mqttClients.forEach(client => {
+        if (client && client.connected) {
+          try { client.publish(mqttTopic, str, { qos: 0 }); } catch (e) {}
+        }
+      });
+
+      activePeerConns.forEach(conn => {
+        if (conn && conn.open) {
+          try { conn.send(fullPayload); } catch (e) {}
+        }
+      });
+    }
+
+    function handleRawIncomingData(data, transportSource) {
+      if (!data || !data.packetId || data.senderId === localClientId) return;
+      if (data.roomId && data.roomId !== roomId) return;
+      if (seenPacketIds.has(data.packetId)) return;
+      seenPacketIds.add(data.packetId);
+
+      if (data.senderId) {
+        remotePeers.set(data.senderId, {
+          handle: data.handle || '[ANON]',
+          isOperator: !!data.isOperator,
+          lastSeen: Date.now()
+        });
+        updateConnectionUI();
+      }
+
+      if (data.type === 'PRESENCE_PING' || data.type === 'PRESENCE_HEARTBEAT') {
+        if (data.senderId && !activePeerConns.has(data.senderId) && data.peerId && peer) {
+          connectToRemotePeerId(data.peerId);
+        }
+        return;
+      }
+
+      if (data.type === 'CHAT_MSG') {
+        if (mutedUsers.has(String(data.handle).toUpperCase())) return;
+        renderChatMessage({
+          handle: data.handle,
+          text: data.text,
+          plainText: data.plainText,
+          isCipher: data.isCipher,
+          isOperatorMsg: data.isOperator,
+          timestamp: data.timestamp,
+          isSelf: false
+        });
+        playBeep(880, 0.05);
+      } else if (data.type === 'IMAGE_MSG') {
+        if (mutedUsers.has(String(data.handle).toUpperCase())) return;
+        renderImageMessage({
+          handle: data.handle,
+          imageData: data.imageData,
+          isOperatorMsg: data.isOperator,
+          timestamp: data.timestamp,
+          isSelf: false
+        });
+        playBeep(720, 0.08, 'triangle');
+      } else if (data.type === 'VOICE_MSG') {
+        if (mutedUsers.has(String(data.handle).toUpperCase())) return;
+        renderVoiceMessage({
+          handle: data.handle,
+          audioData: data.audioData,
+          duration: data.duration,
+          isOperatorMsg: data.isOperator,
+          timestamp: data.timestamp,
+          isSelf: false
+        });
+        playBeep(780, 0.08, 'triangle');
+      } else if (data.type === 'TYPING') {
+        showTypingIndicator(data.handle);
+      } else if (data.type === 'RENAME_NOTICE') {
+        appendSystemLine(`[IDENTITY NOTICE] ${data.oldHandle || 'PEER'} renamed to ${data.handle}`, 'dim');
+      } else if (data.type === 'ROOM_LOCK_STATE') {
+        isRoomLocked = data.locked;
+        appendSystemLine(`[ROOM NOTICE] Frequency code was ${isRoomLocked ? 'LOCKED' : 'UNLOCKED'} by ${data.handle || 'Operator'}.`, 'warning');
+      } else if (data.type === 'BURN_SESSION') {
+        executeLocalBurn(data.handle || 'OPERATOR');
+      } else if (data.type === 'BROADCAST_ALERT') {
+        triggerGlobalBroadcastBanner(data.message, data.handle || 'OPERATOR');
+      } else if (data.type === 'KICK_USER' && data.targetHandle) {
+        if (myHandle.toUpperCase().includes(data.targetHandle.toUpperCase())) {
+          appendSystemLine(`[★ OPERATOR] You have been ejected from this frequency. Shifting room...`, 'danger');
+          setRoomFrequency(generateRandomCode(), false);
+        }
+      }
+    }
+
+    function pruneStalePeers() {
+      const now = Date.now();
+      for (const [id, info] of remotePeers.entries()) {
+        if (now - info.lastSeen > 12000) {
+          remotePeers.delete(id);
+        }
+      }
+      updateConnectionUI();
+    }
+
+    function updateConnectionUI() {
+      const dot = document.getElementById('conn-dot');
+      const text = document.getElementById('conn-text');
+      const activeBrokers = mqttClients.filter(c => c && c.connected).length;
+      const totalConns = activePeerConns.size + activeBrokers;
+
+      if (totalConns > 0) {
+        dot.className = 'w-2 h-2 rounded-full bg-[#00ff41]';
+        text.textContent = `MESH SECURE (${remotePeers.size + 1} NODES)`;
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
+        text.textContent = `SOLO OSCILLATOR (SCANNING...)`;
+      }
+    }
+
+    function sendPingTest() {
+      initAudio();
+      playBeep(920, 0.06);
+      const start = Date.now();
+      sendPacket({ type: 'PRESENCE_PING', pingTime: start });
+      setTimeout(() => {
+        const ms = Date.now() - start;
+        appendSystemLine(`[PING TEST] Round-trip mesh latency: ~${ms}ms (${remotePeers.size} peer nodes connected)`, 'highlight');
+      }, 200);
+    }
+
+    // ==========================================
+    // RENDERERS & COMMANDS
     // ==========================================
     function encodeToRunes(str) {
-      return str
-        .toUpperCase()
-        .split('')
-        .map(ch => CIPHER_MAP[ch] || ch)
-        .join('');
+      return str.toUpperCase().split('').map(ch => CIPHER_MAP[ch] || ch).join('');
     }
 
     function decodeFromRunes(str) {
-      return str
-        .split('')
-        .map(ch => REVERSE_CIPHER_MAP[ch] || ch)
-        .join('');
+      return str.split('').map(ch => REVERSE_CIPHER_MAP[ch] || ch).join('');
     }
 
     function appendSystemLine(text, style = 'normal') {
@@ -1910,8 +1960,7 @@
       header.appendChild(timeSpan);
 
       const body = document.createElement('div');
-      body.className = 'text-sm sm:text-base text-[#00ff41] break-words tracking-wide';
-      if (isOperatorMsg || (isSelf && isOperator)) body.className = 'text-sm sm:text-base text-yellow-200 break-words tracking-wide';
+      body.className = isOperatorMsg || (isSelf && isOperator) ? 'text-sm sm:text-base text-yellow-200 break-words tracking-wide' : 'text-sm sm:text-base text-[#00ff41] break-words tracking-wide';
 
       if (isCipher) {
         const cipherSpan = document.createElement('span');
@@ -1940,9 +1989,6 @@
       scrollToBottom();
     }
 
-    // ==========================================
-    // PICTURE TRANSMISSION & RENDERING
-    // ==========================================
     function triggerImageSelect() {
       initAudio();
       playBeep(740, 0.04);
@@ -1977,7 +2023,6 @@
       }
 
       appendSystemLine(`[COMPRESSING & TRANSMITTING IMAGE PACKET...]`, 'dim');
-
       const reader = new FileReader();
       reader.onload = (e) => {
         const img = new Image();
@@ -2055,34 +2100,9 @@
 
       const imgEl = document.createElement('img');
       imgEl.src = imageData;
-      imgEl.alt = 'Encrypted Attachment';
       imgEl.className = 'max-h-60 sm:max-h-72 w-auto object-contain block transition duration-200';
 
-      const actionBar = document.createElement('div');
-      actionBar.className = 'flex items-center justify-between px-2 py-1 bg-[#010d04]/90 border-t border-[#00ff41]/30 text-[11px] gap-3';
-
-      const zoomHint = document.createElement('span');
-      zoomHint.className = 'text-emerald-400';
-      zoomHint.textContent = '[CLICK TO EXPAND]';
-
-      const crtFilterBtn = document.createElement('button');
-      crtFilterBtn.type = 'button';
-      crtFilterBtn.className = 'text-[#00ff41] hover:underline font-bold';
-      crtFilterBtn.textContent = 'CRT TINT: OFF';
-      let crtTintOn = false;
-      crtFilterBtn.onclick = (ev) => {
-        ev.stopPropagation();
-        crtTintOn = !crtTintOn;
-        imgEl.style.filter = crtTintOn ? 'sepia(100%) hue-rotate(75deg) saturate(260%) contrast(115%)' : 'none';
-        crtFilterBtn.textContent = crtTintOn ? 'CRT TINT: ON' : 'CRT TINT: OFF';
-      };
-
-      actionBar.appendChild(zoomHint);
-      actionBar.appendChild(crtFilterBtn);
-
       imgWrap.appendChild(imgEl);
-      imgWrap.appendChild(actionBar);
-
       row.appendChild(header);
       row.appendChild(imgWrap);
       outputEl.appendChild(row);
@@ -2105,9 +2125,6 @@
       modal.classList.remove('flex');
     }
 
-    // ==========================================
-    // VOICE NOTE RECORDING & PLAYER
-    // ==========================================
     function formatDuration(seconds) {
       const s = Math.max(0, Math.floor(seconds || 0));
       const mins = String(Math.floor(s / 60)).padStart(2, '0');
@@ -2142,19 +2159,14 @@
         }
 
         mediaRecorder.ondataavailable = (event) => {
-          if (event.data && event.data.size > 0) {
-            audioChunks.push(event.data);
-          }
+          if (event.data && event.data.size > 0) audioChunks.push(event.data);
         };
 
         mediaRecorder.onstop = () => {
           stream.getTracks().forEach(track => track.stop());
           const elapsedSeconds = Math.max(1, Math.round((Date.now() - voiceStartTime) / 1000));
 
-          if (!shouldSendRecordedVoice || audioChunks.length === 0) {
-            appendSystemLine(`[VOICE RECORDING CANCELLED]`, 'dim');
-            return;
-          }
+          if (!shouldSendRecordedVoice || audioChunks.length === 0) return;
 
           const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
           const reader = new FileReader();
@@ -2203,7 +2215,7 @@
           if (secs >= 40) stopVoiceRecording(true);
         }, 250);
       } catch (err) {
-        appendSystemLine(`[MICROPHONE ACCESS DENIED] Please allow microphone access in your browser settings.`, 'warning');
+        appendSystemLine(`[MICROPHONE ACCESS DENIED]`, 'warning');
       }
     }
 
@@ -2223,9 +2235,7 @@
       voiceBtn.classList.remove('border-red-500', 'bg-red-950/60', 'text-red-300');
 
       try {
-        if (mediaRecorder.state !== 'inactive') {
-          mediaRecorder.stop();
-        }
+        if (mediaRecorder.state !== 'inactive') mediaRecorder.stop();
       } catch (e) {}
     }
 
@@ -2254,8 +2264,6 @@
       header.appendChild(timeSpan);
 
       const audio = new Audio(audioData);
-      let isDisguisedPitch = false;
-
       const playerBox = document.createElement('div');
       playerBox.className = 'flex flex-wrap items-center gap-2.5 bg-black/70 border border-[#00ff41]/40 px-3 py-2 rounded';
 
@@ -2274,21 +2282,6 @@
       const timeLabel = document.createElement('span');
       timeLabel.className = 'text-xs font-mono text-[#00ff41] shrink-0';
       timeLabel.textContent = `00:00 / ${formatDuration(duration || 1)}`;
-
-      const maskBtn = document.createElement('button');
-      maskBtn.type = 'button';
-      maskBtn.className = 'text-[11px] px-2 py-0.5 rounded border subtle-border bg-[#001806] hover:bg-[#003311] text-emerald-300 transition shrink-0';
-      maskBtn.textContent = 'PITCH: 1.0x';
-
-      maskBtn.onclick = () => {
-        isDisguisedPitch = !isDisguisedPitch;
-        if ('preservesPitch' in audio) audio.preservesPitch = false;
-        if ('mozPreservesPitch' in audio) audio.mozPreservesPitch = false;
-        if ('webkitPreservesPitch' in audio) audio.webkitPreservesPitch = false;
-        audio.playbackRate = isDisguisedPitch ? 0.78 : 1.0;
-        maskBtn.textContent = isDisguisedPitch ? 'PITCH: DEEP' : 'PITCH: 1.0x';
-        maskBtn.classList.toggle('border-[#00ff41]', isDisguisedPitch);
-      };
 
       playBtn.onclick = () => {
         if (audio.paused) {
@@ -2312,17 +2305,9 @@
         progressBar.style.width = '0%';
       };
 
-      progressWrap.onclick = (e) => {
-        const total = (audio.duration && isFinite(audio.duration)) ? audio.duration : (duration || 1);
-        const rect = progressWrap.getBoundingClientRect();
-        const clickRatio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-        audio.currentTime = clickRatio * total;
-      };
-
       playerBox.appendChild(playBtn);
       playerBox.appendChild(progressWrap);
       playerBox.appendChild(timeLabel);
-      playerBox.appendChild(maskBtn);
 
       row.appendChild(header);
       row.appendChild(playerBox);
@@ -2330,9 +2315,6 @@
       scrollToBottom();
     }
 
-    // ==========================================
-    // FORM SUBMIT & SLASH COMMANDS
-    // ==========================================
     function handleFormSubmit(e) {
       e.preventDefault();
       const raw = inputEl.value.trim();
@@ -2353,7 +2335,7 @@
       }
 
       if (isRoomLocked && !isOperator) {
-        appendSystemLine(`[ROOM LOCKED] Frequency code is locked by Operator. New messages blocked.`, 'warning');
+        appendSystemLine(`[ROOM LOCKED] Frequency code is locked by Operator.`, 'warning');
         return;
       }
 
@@ -2388,20 +2370,14 @@
     function triggerRiddlerAutoReply(userText) {
       setTimeout(() => {
         if (botMode === 'AUTO' && remotePeers.size > 0) return;
-
         showTypingIndicator('[?_RIDDLER_NODE]');
         setTimeout(() => {
           hideTypingIndicator();
           if (botMode === 'AUTO' && remotePeers.size > 0) return;
 
           playBeep(780, 0.06, 'square');
-          const lower = userText.toLowerCase();
           let reply = RIDDLER_RESPONSES[riddlerIdx % RIDDLER_RESPONSES.length];
           riddlerIdx++;
-
-          if (lower.includes('hi') || lower.includes('hello') || lower.includes('hey')) {
-            reply = `<?> GREETINGS, ${myHandle}. YOUR FREQUENCY CODE IS [ ${roomId.toUpperCase()} ]. ENTER THIS EXACT CODE ON YOUR SECOND DEVICE USING 'JOIN FRIEND'S CODE' TO LINK LIVE.`;
-          }
 
           renderChatMessage({
             handle: '[?_RIDDLER_NODE]',
@@ -2428,102 +2404,40 @@
           ownerDeop();
           break;
 
-        case '/genkey':
-          if (!args) {
-            appendSystemLine(`Usage: /genkey [your-new-password]`, 'warning');
-          } else {
-            const bytes = encodeSecretBytes(args.toLowerCase());
-            appendSystemLine(`[KEY GENERATOR] Obfuscated byte array for your new secret key:`, 'highlight');
-            appendSystemLine(`const OWNER_SECRET_BYTES = [${bytes.join(', ')}];`, 'highlight');
-          }
-          break;
-
-        case '/kick':
-          if (!isOperator) {
-            appendSystemLine(`[ACCESS DENIED] /kick command requires [★ OPERATOR] owner privileges.`, 'warning');
-            return;
-          }
-          if (!args) {
-            appendSystemLine(`Usage: /kick [handle]`, 'warning');
-            return;
-          }
-          sendPacket({ type: 'KICK_USER', targetHandle: args, handle: myHandle });
-          appendSystemLine(`[★ OPERATOR] Ejected ${args} from frequency.`, 'warning');
-          break;
-
-        case '/mute':
-          if (!isOperator) {
-            appendSystemLine(`[ACCESS DENIED] /mute command requires [★ OPERATOR] owner privileges.`, 'warning');
-            return;
-          }
-          if (!args) {
-            appendSystemLine(`Usage: /mute [handle]`, 'warning');
-            return;
-          }
-          mutedUsers.add(args.toUpperCase());
-          appendSystemLine(`[★ OPERATOR] Muted transmissions from ${args.toUpperCase()}.`, 'warning');
-          break;
-
-        case '/unmute':
-          if (!isOperator) {
-            appendSystemLine(`[ACCESS DENIED] /unmute command requires [★ OPERATOR] owner privileges.`, 'warning');
-            return;
-          }
-          if (!args) {
-            appendSystemLine(`Usage: /unmute [handle]`, 'warning');
-            return;
-          }
-          mutedUsers.delete(args.toUpperCase());
-          appendSystemLine(`[★ OPERATOR] Unmuted transmissions from ${args.toUpperCase()}.`, 'highlight');
-          break;
-
-        case '/lock':
-          if (!isOperator) {
-            appendSystemLine(`[ACCESS DENIED] /lock command requires [★ OPERATOR] owner privileges.`, 'warning');
-            return;
-          }
-          ownerActionLock();
-          break;
-
-        case '/unlock':
-          if (!isOperator) {
-            appendSystemLine(`[ACCESS DENIED] /unlock command requires [★ OPERATOR] owner privileges.`, 'warning');
-            return;
-          }
-          ownerActionUnlock();
-          break;
-
         case '/broadcast':
           if (!isOperator) {
-            appendSystemLine(`[ACCESS DENIED] /broadcast command requires [★ OPERATOR] owner privileges.`, 'warning');
+            appendSystemLine(`[ACCESS DENIED] /broadcast requires [★ OPERATOR] owner privileges.`, 'warning');
             return;
           }
           if (!args) {
             openBroadcastModal();
             return;
           }
-          triggerGlobalBroadcastBanner(args, myHandle);
-          sendPacket({ type: 'BROADCAST_ALERT', message: args, handle: myHandle });
+          triggerGlobalBroadcastBanner(args, `${myHandle} // ALL FREQUENCIES`);
+          sendGlobalSysopPacket({ type: 'SITE_WIDE_BROADCAST', message: args });
+          break;
+
+        case '/globalburn':
+        case '/burnall':
+          if (!isOperator) {
+            appendSystemLine(`[ACCESS DENIED] /globalburn requires [★ OPERATOR] owner privileges.`, 'warning');
+            return;
+          }
+          ownerActionSiteWideBurn();
           break;
 
         case '/help':
-          appendSystemLine(`=== RATAALADA-CHAT v4.7 TERMINAL COMMANDS ===`, 'highlight');
-          appendSystemLine(`/name [new_name]- Set or change your saved username (or click ID: [NAME] ✎)`);
-          appendSystemLine(`/login          - Open the Terminal Identity Login box`);
-          appendSystemLine(`/join [code]    - Connect to another device's 6-digit Frequency Code`);
-          appendSystemLine(`/ping           - Test round-trip connection speed with linked device`);
-          appendSystemLine(`/status         - Show detailed P2P WebRTC & WSS Relay diagnostics`);
-          appendSystemLine(`/cipher [text]  - Send a message encrypted in substitution glyphs`);
-          appendSystemLine(`/decode [runes] - Translate cipher glyphs back into plain text`);
-          appendSystemLine(`/bot            - Toggle Riddler AI auto-responder (AUTO / ON / OFF)`);
-          appendSystemLine(`/burn           - Wipe chat history on your screen (or all screens if Operator)`);
-          appendSystemLine(`/op             - Open secure masked password prompt for [★ OPERATOR]`);
+          appendSystemLine(`=== RATAALADA-CHAT v5.0 COMMANDS ===`, 'highlight');
+          appendSystemLine(`/name [new_name] - Change username`);
+          appendSystemLine(`/login         - Open identity login box`);
+          appendSystemLine(`/join [code]   - Join frequency code`);
+          appendSystemLine(`/ping          - Test mesh latency`);
+          appendSystemLine(`/status        - Show diagnostics`);
+          appendSystemLine(`/burn          - Wipe terminal history`);
+          appendSystemLine(`/op            - Open Operator password prompt`);
           if (isOperator) {
-            appendSystemLine(`/kick [handle]  - Eject a user from the room frequency`, 'warning');
-            appendSystemLine(`/mute [handle]  - Block a user's messages`, 'warning');
-            appendSystemLine(`/lock / unlock  - Freeze or open room frequency access`, 'warning');
-            appendSystemLine(`/broadcast [msg]- Flash emergency red alert banner on all screens`, 'warning');
-            appendSystemLine(`/genkey [secret]- Generate a new encoded byte array for your password`, 'warning');
+            appendSystemLine(`/broadcast [msg] - Broadcast across all frequencies`, 'warning');
+            appendSystemLine(`/globalburn    - Purge all terminals site-wide`, 'warning');
           }
           break;
 
@@ -2536,90 +2450,15 @@
           sendPingTest();
           break;
 
-        case '/status': {
-          const connectedBrokers = mqttClients.filter(c => c && c.connected).length;
+        case '/status':
           appendSystemLine(`=== MESH DIAGNOSTICS [ROOM: ${roomId.toUpperCase()}] ===`, 'highlight');
           appendSystemLine(`> SAVED IDENTITY: ${myHandle}`);
-          appendSystemLine(`> WSS RELAY BROKERS ONLINE: ${connectedBrokers} / ${mqttClients.length}`);
-          appendSystemLine(`> WEBRTC P2P SLOT: ${myPeerId || 'INITIALIZING'} (${activePeerConns.size} direct channels)`);
-          appendSystemLine(`> LINKED REMOTE DEVICES: ${remotePeers.size}`);
+          appendSystemLine(`> LINKED PEER NODES: ${remotePeers.size}`);
           appendSystemLine(`> OPERATOR MODE: ${isOperator ? 'ACTIVE [★]' : 'INACTIVE'}`);
           break;
-        }
 
         case '/bot':
           toggleRiddlerBot();
-          break;
-
-        case '/cipher':
-          if (!args) {
-            toggleCipherMode();
-          } else {
-            const encoded = encodeToRunes(args);
-            const timestamp = new Date().toLocaleTimeString([], { hour12: false });
-            renderChatMessage({
-              handle: myHandle,
-              text: encoded,
-              plainText: args,
-              isCipher: true,
-              isOperatorMsg: isOperator,
-              timestamp,
-              isSelf: true
-            });
-            sendPacket({
-              type: 'CHAT_MSG',
-              handle: myHandle,
-              text: encoded,
-              plainText: args,
-              isCipher: true,
-              isOperator,
-              timestamp
-            });
-          }
-          break;
-
-        case '/decode':
-          if (!args) appendSystemLine(`Usage: /decode [glyphs]`, 'warning');
-          else appendSystemLine(`[DECRYPTED OUTPUT]: ${decodeFromRunes(args)}`, 'highlight');
-          break;
-
-        case '/login':
-        case '/name':
-        case '/handle':
-          if (isOperator) {
-            appendSystemLine(`[★ BATMAN] Your Owner identity is permanently fixed as ${OWNER_FIXED_HANDLE} so everyone knows you are the Owner.`, 'highlight');
-            return;
-          }
-          if (!args) {
-            openUsernameModal(false);
-          } else {
-            const clean = sanitizeUsername(args);
-            const check = checkUsernameAvailability(clean);
-            if (!check.available) {
-              playBeep(180, 0.25, 'sawtooth');
-              if (check.reason === 'RESERVED_OWNER') {
-                appendSystemLine(`[ACCESS DENIED] "${clean}" is permanently reserved for the Website Owner [★ BATMAN].`, 'danger');
-              } else if (check.reason === 'TAKEN_IN_ROOM' || check.reason === 'TAKEN_GLOBAL') {
-                appendSystemLine(`[USERNAME TAKEN] "${clean}" is already in use! Try "${suggestUniqueUsername(clean)}" instead.`, 'warning');
-              } else {
-                appendSystemLine(`[ERROR] Username must be between 2 and 18 characters.`, 'warning');
-              }
-              return;
-            }
-            const oldHandle = myHandle;
-            savedCustomUsername = clean;
-            writeUsernameCookie(clean);
-            myHandle = `[${clean}]`;
-            document.getElementById('handle-display').textContent = myHandle;
-            appendSystemLine(`[UNIQUE IDENTITY CLAIMED] Saved fixed username as ${myHandle}`, 'highlight');
-            sendPacket({
-              type: 'RENAME_NOTICE',
-              oldHandle,
-              handle: myHandle,
-              isOperator
-            });
-            broadcastPresence('PRESENCE_PING');
-          }
           break;
 
         case '/burn':
@@ -2631,29 +2470,49 @@
           appendSystemLine(`[LOCAL CONSOLE BUFFER CLEARED]`, 'dim');
           break;
 
+        case '/login':
+        case '/name':
+        case '/handle':
+          if (isOperator) {
+            appendSystemLine(`[★ BATMAN] Owner identity is permanently fixed as ${OWNER_FIXED_HANDLE}.`, 'highlight');
+            return;
+          }
+          if (!args) openUsernameModal(false);
+          else {
+            const clean = sanitizeUsername(args);
+            const check = checkUsernameAvailability(clean);
+            if (!check.available) {
+              appendSystemLine(`[ERROR] Username not available.`, 'warning');
+              return;
+            }
+            const oldHandle = myHandle;
+            savedCustomUsername = clean;
+            writeUsernameCookie(clean);
+            myHandle = `[${clean}]`;
+            document.getElementById('handle-display').textContent = myHandle;
+            sendPacket({ type: 'RENAME_NOTICE', oldHandle, handle: myHandle, isOperator });
+            broadcastPresence('PRESENCE_PING');
+          }
+          break;
+
         default:
-          appendSystemLine(`[UNKNOWN COMMAND]: ${cmd}. Type /help for available commands.`, 'warning');
+          appendSystemLine(`[UNKNOWN COMMAND]: ${cmd}. Type /help for commands.`, 'warning');
       }
     }
 
     function toggleCipherMode() {
       cipherMode = !cipherMode;
-      const btn = document.getElementById('cipher-toggle-btn');
-      const stateEl = document.getElementById('cipher-state');
-      stateEl.textContent = cipherMode ? 'ON (GLYPHS)' : 'OFF';
-      btn.classList.toggle('border-[#00ff41]', cipherMode);
-      btn.classList.toggle('bg-[#003b14]', cipherMode);
+      document.getElementById('cipher-state').textContent = cipherMode ? 'ON (GLYPHS)' : 'OFF';
       playBeep(cipherMode ? 960 : 540, 0.06);
     }
 
     function burnSession() {
       if (isOperator) {
-        sendPacket({ type: 'BURN_SESSION', handle: myHandle });
-        executeLocalBurn(myHandle);
+        ownerActionSiteWideBurn();
       } else {
         playBeep(220, 0.25, 'sawtooth');
         outputEl.innerHTML = '';
-        appendSystemLine(`[LOCAL CONSOLE BUFFER PURGED] (Unlock [★ OPERATOR] to burn across all connected screens)`, 'warning');
+        appendSystemLine(`[LOCAL CONSOLE BUFFER PURGED]`, 'warning');
       }
     }
 
@@ -2662,7 +2521,6 @@
       outputEl.innerHTML = '';
       appendSystemLine(`========================================================`, 'danger');
       appendSystemLine(`[ ! ] EMERGENCY PROTOCOL: SESSION BURNED BY ${initiator}`, 'danger');
-      appendSystemLine(`[ ! ] ALL TERMINAL LOGS PURGED FROM MEMORY.`, 'danger');
       appendSystemLine(`========================================================`, 'danger');
     }
 
@@ -2677,7 +2535,7 @@
 
     function showTypingIndicator(handle) {
       const el = document.getElementById('typing-indicator');
-      el.textContent = `▶ ${handle || 'REMOTE PEER'} IS TYPING...`;
+      el.textContent = `▶ ${handle || 'PEER'} IS TYPING...`;
       el.classList.remove('hidden');
       if (typingTimeout) clearTimeout(typingTimeout);
       typingTimeout = setTimeout(hideTypingIndicator, 2200);
@@ -2687,34 +2545,27 @@
       document.getElementById('typing-indicator').classList.add('hidden');
     }
 
-    // ==========================================
-    // MODALS & CLIPBOARD HELPERS
-    // ==========================================
     function openShareModal() {
       playBeep(880, 0.05);
-      const modal = document.getElementById('share-modal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
+      document.getElementById('share-modal').classList.remove('hidden');
+      document.getElementById('share-modal').classList.add('flex');
     }
 
     function closeShareModal() {
-      const modal = document.getElementById('share-modal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
+      document.getElementById('share-modal').classList.add('hidden');
+      document.getElementById('share-modal').classList.remove('flex');
     }
 
     function openJoinModal() {
       playBeep(880, 0.05);
-      const modal = document.getElementById('join-modal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
+      document.getElementById('join-modal').classList.remove('hidden');
+      document.getElementById('join-modal').classList.add('flex');
       setTimeout(() => document.getElementById('join-code-input').focus(), 50);
     }
 
     function closeJoinModal() {
-      const modal = document.getElementById('join-modal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
+      document.getElementById('join-modal').classList.add('hidden');
+      document.getElementById('join-modal').classList.remove('flex');
     }
 
     function submitJoinModal(e) {
@@ -2759,7 +2610,7 @@
     }
 
     function copyFreqCode() {
-      copyTextToClipboard(roomId.toUpperCase(), `FREQUENCY CODE [${roomId.toUpperCase()}] COPIED!`);
+      copyTextToClipboard(roomId.toUpperCase(), `FREQUENCY CODE COPIED!`);
     }
 
     function copyInviteLink() {
@@ -2790,12 +2641,10 @@
         closeImageModal();
         closeOpAuthModal();
         closeBroadcastModal();
-        // Allow closing username modal if user already has a saved username
         if (savedCustomUsername) closeUsernameModal();
       }
     });
 
-    // Boot Sequence on Window Load
     window.onload = function () {
       const storedCookieName = readUsernameCookie();
       if (storedCookieName) {
@@ -2810,12 +2659,11 @@
       setRoomFrequency(initialRoom, true);
 
       const bootLines = [
-        `> INITIALIZING RATAALADA-CHAT MESH v4.7... [OK]`,
-        `> PORT-443 WSS RELAY + WEBRTC P2P ENCRYPTION... [OK]`,
+        `> INITIALIZING RATAALADA-CHAT SEC_MESH v5.0... [OK]`,
         `> ACTIVE FREQUENCY CODE: [ ${roomId.toUpperCase()} ]`,
         savedCustomUsername
-          ? `> WELCOME BACK, ${myHandle}. (CLICK "ID: ${myHandle} ✎" ANYTIME TO CHANGE USERNAME)`
-          : `> [ ? ] TERMINAL READY. PLEASE LOG IN WITH YOUR CODENAME TO BEGIN.`
+          ? `> WELCOME BACK, ${myHandle}.`
+          : `> [ ? ] TERMINAL READY. PLEASE LOG IN WITH YOUR CODENAME.`
       ];
 
       bootLines.forEach((line, idx) => {
@@ -2825,7 +2673,6 @@
       });
 
       if (!savedCustomUsername) {
-        // Show the initial Username Login box so the user picks their fixed codename
         setTimeout(() => openUsernameModal(true), 350);
       } else {
         inputEl.focus();
