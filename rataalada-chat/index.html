@@ -37,6 +37,33 @@
       padding: 0;
       overflow: hidden;
       text-shadow: 0 0 6px rgba(0, 255, 65, 0.45);
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    /* Dynamic CRT Phosphor Themes */
+    body.theme-red {
+      --phosphor: #ff2a2a;
+      --phosphor-dim: #990f0f;
+      --phosphor-dark: #2b0404;
+      --bg-void: #080101;
+      text-shadow: 0 0 6px rgba(255, 42, 42, 0.45);
+      filter: hue-rotate(115deg) saturate(1.25);
+    }
+    body.theme-amber {
+      --phosphor: #ffb000;
+      --phosphor-dim: #996900;
+      --phosphor-dark: #2b1d00;
+      --bg-void: #080500;
+      text-shadow: 0 0 6px rgba(255, 176, 0, 0.45);
+      filter: hue-rotate(275deg) saturate(1.15);
+    }
+    body.theme-cyan {
+      --phosphor: #00e5ff;
+      --phosphor-dim: #007c8a;
+      --phosphor-dark: #00262b;
+      --bg-void: #010608;
+      text-shadow: 0 0 6px rgba(0, 229, 255, 0.45);
+      filter: hue-rotate(55deg) saturate(1.15);
     }
 
     .crt-scanlines {
@@ -69,6 +96,20 @@
 
     .crt-flicker {
       animation: flicker 4s infinite;
+    }
+
+    @keyframes matrixGlitchShake {
+      0% { transform: translate(0, 0) skew(0deg); filter: invert(0); }
+      15% { transform: translate(-10px, 6px) skew(-8deg); filter: invert(1) hue-rotate(90deg); }
+      30% { transform: translate(10px, -6px) skew(8deg); }
+      45% { transform: translate(-8px, -4px) skew(-4deg); filter: invert(0); }
+      60% { transform: translate(8px, 6px) skew(6deg); filter: saturate(3); }
+      75% { transform: translate(-6px, 2px) skew(-3deg); }
+      100% { transform: translate(0, 0) skew(0deg); filter: invert(0); }
+    }
+
+    .glitch-active {
+      animation: matrixGlitchShake 0.28s infinite !important;
     }
 
     .subtle-border {
@@ -115,6 +156,36 @@
   <div class="fixed inset-0 crt-scanlines z-40"></div>
   <div class="fixed inset-0 crt-vignette z-40"></div>
 
+  <!-- Matrix Glitch Prank Overlay (#10) -->
+  <div id="glitch-overlay" class="hidden fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center pointer-events-none select-none">
+    <div class="riddler-q text-7xl sm:text-9xl text-[#00ff41] font-bold animate-bounce tracking-widest">? ? ?</div>
+    <p class="text-sm sm:text-xl font-bold tracking-[0.35em] text-[#00ff41] mt-4 bg-black px-4 py-1 border border-[#00ff41]">SYSTEM OVERRIDE // NO MORE LIES</p>
+  </div>
+
+  <!-- Boss Key / Panic Stealth Mode Overlay (#2) -->
+  <div id="stealth-overlay" class="hidden fixed inset-0 bg-[#0d1117] text-gray-300 font-mono text-xs p-4 sm:p-8 z-50 overflow-y-auto select-none" style="text-shadow:none; filter:none !important;">
+    <div class="max-w-5xl mx-auto space-y-2">
+      <div class="flex items-center justify-between border-b border-gray-700 pb-2 mb-4">
+        <span class="text-gray-400 font-bold">ubuntu@prod-cluster-node04:~/kernel-build-v6.8.12$ make -j8 all</span>
+        <button onclick="toggleStealthMode()" class="text-[11px] bg-gray-800 hover:bg-gray-700 text-gray-300 px-2.5 py-1 rounded border border-gray-600">
+          [RESUME SESSION / PRESS ~]
+        </button>
+      </div>
+      <p class="text-green-400">[  1%] Building C object arch/x86/kernel/cpu/CMakeFiles/cpu_core.dir/intel.c.o</p>
+      <p>[  4%] Building C object arch/x86/mm/CMakeFiles/mm_init.dir/pageattr.c.o</p>
+      <p>[  9%] Compiling net/ipv4/tcp_ipv4.c -> build/net/tcp_ipv4.o</p>
+      <p class="text-blue-400">[ 14%] Linking static library libkernel_crypto.a</p>
+      <p>[ 22%] Verifying SHA-256 checksums for systemd-networkd modules... OK</p>
+      <p>[ 31%] Running GCC optimization pass (-O3 -march=native) on drivers/gpu/drm/...</p>
+      <p class="text-yellow-400">warning: implicit declaration of function 'pci_alloc_consistent_dma' [-Wimplicit-function-declaration]</p>
+      <p>[ 48%] Building CXX object src/distributed/consensus/raft_log_storage.cpp.o</p>
+      <p>[ 63%] Generating protocol buffer descriptors for telemetry_service.proto</p>
+      <p>[ 77%] Running unit test suite: 148/148 passed (0 failed, 0 skipped) in 4.12s</p>
+      <p class="text-green-400 animate-pulse">[ 89%] Synchronizing container registry layers [################....] 89%</p>
+      <p class="text-gray-500 pt-6">Press the `~` (Backquote) key or click [RESUME SESSION] in the top-right to return.</p>
+    </div>
+  </div>
+
   <!-- Emergency Red Broadcast Banner (Owner Only Trigger) -->
   <div id="broadcast-banner" class="hidden bg-red-950/90 border-b-2 border-red-500 text-red-200 px-4 py-2 text-xs sm:text-sm font-bold flex items-center justify-between z-30 shrink-0 animate-pulse">
     <div class="flex items-center space-x-2">
@@ -127,9 +198,15 @@
   <!-- Owner-Only Exclusive Control Bar (Hidden Unless Unlocked) -->
   <div id="owner-control-bar" class="hidden bg-[#141200] border-b-2 border-[#ffd700] px-3 sm:px-5 py-2 flex flex-wrap items-center justify-between text-xs gap-2 z-25 shrink-0">
     <div class="flex items-center space-x-2">
-      <span class="px-2 py-0.5 rounded bg-yellow-950/80 border border-[#ffd700] text-[#ffd700] font-bold tracking-widest text-[11px]">★ OPERATOR // OWNER MODE ACTIVE</span>
+      <span class="px-2 py-0.5 rounded bg-yellow-950/80 border border-[#ffd700] text-[#ffd700] font-bold tracking-widest text-[11px]">★ OPERATOR // [★ BATMAN]</span>
     </div>
     <div class="flex items-center flex-wrap gap-1.5">
+      <button onclick="toggleNodesDrawer()" class="px-2 py-0.5 rounded border border-yellow-500 bg-yellow-950/40 text-yellow-300 hover:bg-yellow-400 hover:text-black font-bold transition">
+        👥 NODES / KICK
+      </button>
+      <button onclick="ownerActionGlitchAll()" title="Shake & glitch every connected user's screen" class="px-2 py-0.5 rounded border border-emerald-400 bg-emerald-950/60 text-emerald-300 hover:bg-emerald-400 hover:text-black font-bold transition">
+        ⚡ GLITCH ALL
+      </button>
       <button onclick="ownerActionLock()" class="px-2 py-0.5 rounded border border-yellow-500 bg-yellow-950/40 text-yellow-300 hover:bg-yellow-400 hover:text-black font-bold transition">
         🔒 LOCK FREQ
       </button>
@@ -140,7 +217,7 @@
         🔥 ROOM BURN
       </button>
       <button onclick="ownerActionSiteWideBurn()" title="EMERGENCY: Wipe all terminals across ALL frequencies on the entire website" class="px-2 py-0.5 rounded border border-red-500 bg-red-950/80 text-red-300 hover:bg-red-600 hover:text-black font-bold transition animate-pulse">
-        ☢️ SITE-WIDE BURN (ALL FREQS)
+        ☢️ SITE-WIDE BURN
       </button>
       <button onclick="openBroadcastModal()" title="Broadcast emergency alert across ALL frequencies on the website" class="px-2 py-0.5 rounded border border-yellow-500 bg-yellow-950/40 text-yellow-300 hover:bg-yellow-400 hover:text-black font-bold transition">
         📢 SITE-WIDE BROADCAST
@@ -152,7 +229,7 @@
   </div>
 
   <!-- Top Terminal Header Bar -->
-  <header class="border-b subtle-border bg-[#030d05]/95 px-3 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-2 z-20 shrink-0">
+  <header class="border-b subtle-border bg-[#030d05]/95 px-3 sm:px-5 py-2 flex flex-wrap items-center justify-between gap-2 z-20 shrink-0">
     <div class="flex items-center space-x-3">
       <div onclick="openOpAuthModal()" title="Operator Terminal Access" class="cursor-pointer w-8 h-8 rounded border border-[#00ff41] flex items-center justify-center bg-[#00240b] glow-box hover:border-yellow-400 transition">
         <span class="riddler-q text-2xl font-bold leading-none select-none">?</span>
@@ -160,58 +237,73 @@
       <div>
         <div class="flex items-center space-x-2">
           <h1 class="text-sm sm:text-base font-bold tracking-widest uppercase">RATAALADA-CHAT</h1>
-          <span class="text-[10px] px-1.5 py-0.5 rounded bg-[#00290d] border border-[#00ff41]/40 text-[#00ff41]">SEC_MESH_v5.0</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-[#00290d] border border-[#00ff41]/40 text-[#00ff41]">SEC_MESH_v6.0</span>
+          <span id="riddler-solved-badge" class="hidden text-[10px] px-1.5 py-0.5 rounded bg-yellow-950/80 border border-yellow-400 text-yellow-300 font-bold">🦇 GCPD_VERIFIED</span>
         </div>
         <p class="text-[11px] text-emerald-500/80 tracking-wider hidden sm:block">HARDENED P2P ENCRYPTED TERMINAL</p>
       </div>
     </div>
 
-    <!-- Live Connection Status & Controls -->
-    <div class="flex items-center flex-wrap gap-2">
-      <div id="conn-badge" onclick="sendPingTest()" title="Click to ping connected peer(s)" class="cursor-pointer flex items-center space-x-2 px-2.5 py-1 rounded border border-amber-500/50 bg-amber-950/30 text-amber-400 text-xs transition">
+    <!-- Live Connection Status & Main Controls -->
+    <div class="flex items-center flex-wrap gap-1.5 sm:gap-2">
+      <!-- Info & Tutorial Guide Button -->
+      <button onclick="openInfoGuideModal()" title="Site Information & Complete New User Tutorial" class="text-xs px-2.5 py-1 rounded border border-[#00ff41] bg-[#003812] hover:bg-[#00ff41] hover:text-black font-bold tracking-wider transition glow-box">
+        📖 GUIDE &amp; INFO
+      </button>
+
+      <!-- Live Connected Users Drawer Trigger (#7) -->
+      <div id="conn-badge" onclick="toggleNodesDrawer()" title="Click to view connected users in this room" class="cursor-pointer flex items-center space-x-2 px-2.5 py-1 rounded border border-amber-500/50 bg-amber-950/30 text-amber-400 text-xs hover:bg-[#002b0f] transition">
         <span id="conn-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
         <span id="conn-text">INITIALIZING MESH...</span>
       </div>
 
-      <button onclick="sendPingTest()" title="Test cross-device connection speed" class="text-xs px-2.5 py-1 rounded border subtle-border bg-[#001a07] hover:bg-[#003311] transition">
-        PING
+      <!-- Riddler Minigame Button (#4) -->
+      <button onclick="openRiddleModal()" title="Play Interactive Riddler ARG Challenge" class="text-xs px-2.5 py-1 rounded border subtle-border bg-[#001a07] hover:bg-[#00ff41] hover:text-black font-bold transition">
+        ? RIDDLE
       </button>
 
-      <button id="bot-btn" onclick="toggleRiddlerBot()" title="Toggle Riddler AI Responder for solo testing" class="text-xs px-2.5 py-1 rounded border subtle-border bg-[#001a07] hover:bg-[#003311] transition">
-        BOT: <span id="bot-label" class="font-bold">AUTO</span>
+      <!-- CRT Phosphor Color Switcher (#6) -->
+      <button onclick="cycleCrtTheme()" title="Switch CRT Monitor Phosphor Color" class="text-xs px-2 py-1 rounded border subtle-border bg-[#001a07] hover:bg-[#003311] transition">
+        CRT: <span id="crt-theme-label" class="font-bold">GREEN</span>
       </button>
 
-      <button id="audio-btn" onclick="toggleAudio()" title="Toggle CRT & Mechanical Key Sounds" class="text-xs px-2.5 py-1 rounded border subtle-border bg-[#001a07] hover:bg-[#003311] transition">
+      <!-- Boss Key / Stealth Mode (#2) -->
+      <button onclick="toggleStealthMode()" title="Boss Key Panic Disguise (Or press ~ key)" class="text-xs px-2 py-1 rounded border subtle-border bg-[#001a07] hover:bg-[#003311] transition">
+        STEALTH
+      </button>
+
+      <button id="audio-btn" onclick="toggleAudio()" title="Toggle CRT & Mechanical Key Sounds" class="text-xs px-2 py-1 rounded border subtle-border bg-[#001a07] hover:bg-[#003311] transition">
         <span id="audio-label">SFX: ON</span>
       </button>
 
-      <button onclick="openShareModal()" class="text-xs px-3 py-1 rounded border border-[#00ff41] bg-[#003812] hover:bg-[#00ff41] hover:text-black font-bold tracking-wider transition glow-box">
-        + INVITE DEVICE
+      <button onclick="openShareModal()" class="text-xs px-2.5 py-1 rounded border border-[#00ff41] bg-[#003812] hover:bg-[#00ff41] hover:text-black font-bold tracking-wider transition glow-box">
+        + INVITE
       </button>
     </div>
   </header>
 
-  <!-- Subheader: Room Frequency & Persona Controls -->
-  <div class="px-3 sm:px-5 py-2 border-b subtle-border bg-[#010903]/90 flex flex-wrap items-center justify-between text-xs gap-2 z-20 shrink-0">
+  <!-- Subheader: Room Frequency & Security/Privacy Controls -->
+  <div class="px-3 sm:px-5 py-1.5 border-b subtle-border bg-[#010903]/90 flex flex-wrap items-center justify-between text-xs gap-2 z-20 shrink-0">
     <div class="flex items-center flex-wrap gap-1.5 sm:gap-2">
-      <span class="text-emerald-500 font-bold tracking-wider">FREQ-CODE:</span>
-      <code id="room-display-id" class="text-[#00ff41] font-bold bg-[#00220c] px-2.5 py-0.5 rounded border border-[#00ff41]/50 tracking-widest text-sm">------</code>
+      <span class="text-emerald-500 font-bold tracking-wider">FREQ:</span>
+      <code id="room-display-id" class="text-[#00ff41] font-bold bg-[#00220c] px-2 py-0.5 rounded border border-[#00ff41]/50 tracking-widest text-sm">------</code>
 
       <button onclick="copyFreqCode()" class="text-[11px] border subtle-border px-2 py-0.5 rounded hover:bg-[#003816] text-[#00ff41] transition">
         COPY CODE
       </button>
 
-      <button onclick="copyInviteLink()" class="text-[11px] border subtle-border px-2 py-0.5 rounded hover:bg-[#003816] text-[#00ff41] transition">
-        COPY URL
+      <button onclick="openJoinModal()" class="text-[11px] border border-emerald-400/70 bg-[#002b0f] px-2 py-0.5 rounded hover:bg-[#00ff41] hover:text-black font-semibold transition">
+        JOIN CODE
       </button>
 
-      <button onclick="openJoinModal()" class="text-[11px] border border-emerald-400/70 bg-[#002b0f] px-2.5 py-0.5 rounded hover:bg-[#00ff41] hover:text-black font-semibold transition">
-        JOIN FRIEND'S CODE
+      <!-- E2EE Room Passphrase Lock (#3) -->
+      <button id="e2ee-btn" onclick="openE2eeModal()" title="Set optional AES-256 Room Passphrase Lock" class="text-[11px] border subtle-border px-2 py-0.5 rounded bg-[#001806] hover:bg-[#003010] transition">
+        🔐 E2EE KEY: <span id="e2ee-state" class="font-bold">OPEN</span>
       </button>
     </div>
 
     <div class="flex items-center flex-wrap gap-1.5 sm:gap-2">
-      <button onclick="openUsernameModal(false)" title="Click to change your saved username anytime" class="text-[11px] border border-[#00ff41]/70 px-2.5 py-0.5 rounded bg-[#00220c] hover:bg-[#00ff41] hover:text-black transition flex items-center space-x-1">
+      <button onclick="openUsernameModal(false)" title="Click to change your saved username anytime" class="text-[11px] border border-[#00ff41]/70 px-2 py-0.5 rounded bg-[#00220c] hover:bg-[#00ff41] hover:text-black transition flex items-center space-x-1">
         <span>ID:</span>
         <span id="handle-display" class="font-bold underline">[ANON_01]</span>
         <span class="text-[10px] opacity-80">✎</span>
@@ -219,6 +311,16 @@
 
       <button onclick="openOpAuthModal()" title="Owner Authentication (Masked Input)" class="text-[11px] border border-yellow-600/50 text-yellow-400 px-2 py-0.5 rounded bg-yellow-950/20 hover:bg-yellow-500 hover:text-black font-bold transition">
         ★ OP
+      </button>
+
+      <!-- Self-Destructing Messages Timer (#1) -->
+      <button id="ttl-toggle-btn" onclick="cycleTtlMode()" title="Self-Destructing Burn-After-Reading Timer" class="text-[11px] border subtle-border px-2 py-0.5 rounded bg-[#001806] hover:bg-[#003010] transition">
+        ⏱️ TTL: <span id="ttl-state" class="font-bold">OFF</span>
+      </button>
+
+      <!-- Bat-Vocoder Voice FX (#5) -->
+      <button onclick="cycleVoiceFx()" title="Voice Changer Filter for Voice Notes" class="text-[11px] border subtle-border px-2 py-0.5 rounded bg-[#001806] hover:bg-[#003010] transition">
+        🎙️ FX: <span id="voice-fx-label" class="font-bold">NORMAL</span>
       </button>
 
       <button id="cipher-toggle-btn" onclick="toggleCipherMode()" title="Encrypt outgoing messages into geometric cipher glyphs" class="text-[11px] border subtle-border px-2 py-0.5 rounded bg-[#001806] hover:bg-[#003010] transition">
@@ -231,20 +333,57 @@
     </div>
   </div>
 
-  <!-- Main Terminal Log Area -->
-  <main id="terminal-output" class="flex-1 overflow-y-auto p-3 sm:p-6 space-y-2.5 text-sm sm:text-base z-10 leading-relaxed" onclick="focusInput()">
-  </main>
+  <!-- Main Workspace Wrapper (Terminal Output + Slide-Out Nodes Drawer) -->
+  <div class="flex-1 flex overflow-hidden relative">
+    <!-- Main Terminal Log Area -->
+    <main id="terminal-output" class="flex-1 overflow-y-auto p-3 sm:p-6 space-y-2.5 text-sm sm:text-base z-10 leading-relaxed" onclick="focusInput()">
+    </main>
+
+    <!-- Live Connected Users Sidebar Drawer (#7) -->
+    <aside id="nodes-drawer" class="hidden w-72 sm:w-80 border-l subtle-border bg-[#020c04]/95 p-4 flex flex-col justify-between z-30 shrink-0 glow-box">
+      <div>
+        <div class="flex items-center justify-between border-b subtle-border pb-2.5 mb-3">
+          <span class="text-xs font-bold tracking-widest uppercase text-[#00ff41]">🟢 NODES ON FREQUENCY</span>
+          <button onclick="toggleNodesDrawer()" class="text-xs px-2 py-0.5 border subtle-border rounded hover:bg-[#00ff41] hover:text-black">✕</button>
+        </div>
+        <div id="nodes-list" class="space-y-2 max-h-[60vh] overflow-y-auto pr-1 text-xs">
+        </div>
+      </div>
+
+      <div class="border-t subtle-border pt-3 text-[11px] text-emerald-400/80 space-y-2">
+        <div class="flex items-center justify-between">
+          <span>BOT RESPONDER:</span>
+          <button onclick="toggleRiddlerBot()" class="px-2 py-0.5 rounded border subtle-border bg-[#001a07] hover:bg-[#003311] text-[#00ff41] font-bold">
+            <span id="bot-label">AUTO</span>
+          </button>
+        </div>
+        <button onclick="sendPingTest()" class="w-full py-1.5 rounded border border-[#00ff41] bg-[#00290d] hover:bg-[#00ff41] hover:text-black font-bold tracking-wider transition">
+          PING ALL NODES
+        </button>
+      </div>
+    </aside>
+  </div>
 
   <!-- Remote Peer Typing Indicator -->
   <div id="typing-indicator" class="hidden px-4 sm:px-6 py-1 text-xs text-emerald-400/90 bg-[#020b04] border-t border-emerald-950/60 italic tracking-wider z-20">
     <span class="inline-block animate-pulse">▶ REMOTE TERMINAL IS TRANSMITTING KEYSTROKES...</span>
   </div>
 
+  <!-- Active Reply Quote Preview Bar (#9) -->
+  <div id="reply-preview-bar" class="hidden px-3 sm:px-6 py-1.5 bg-[#001f0a] border-t border-[#00ff41]/50 flex items-center justify-between text-xs z-20 shrink-0">
+    <div class="flex items-center space-x-2 truncate pr-2">
+      <span class="text-[#00ff41] font-bold">↩ REPLYING TO</span>
+      <span id="reply-target-handle" class="font-bold underline text-emerald-300"></span>:
+      <span id="reply-target-text" class="text-emerald-400/80 truncate italic"></span>
+    </div>
+    <button type="button" onclick="cancelReply()" class="text-red-400 hover:text-white px-2 py-0.5 border border-red-500/50 rounded text-[10px]">CANCEL ✕</button>
+  </div>
+
   <!-- Voice Recording Active Bar -->
   <div id="voice-rec-bar" class="hidden px-3 sm:px-6 py-2 bg-red-950/40 border-t border-red-500/60 flex items-center justify-between text-xs z-20 shrink-0">
     <div class="flex items-center space-x-2.5">
       <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
-      <span class="text-red-400 font-bold tracking-wider">RECORDING AUDIO PACKET:</span>
+      <span class="text-red-400 font-bold tracking-wider">RECORDING AUDIO (<span id="rec-fx-indicator">NORMAL</span>):</span>
       <span id="voice-timer" class="text-[#00ff41] font-mono font-bold text-sm">00:00</span>
     </div>
     <div class="flex items-center space-x-2">
@@ -258,13 +397,19 @@
   </div>
 
   <!-- Command & Chat Input Footer -->
-  <footer class="border-t subtle-border bg-[#020b04] p-2.5 sm:p-4 z-20 shrink-0">
+  <footer class="border-t subtle-border bg-[#020b04] p-2 sm:p-3.5 z-20 shrink-0">
     <input
       id="image-input"
       type="file"
       accept="image/*"
       class="hidden"
       onchange="handleImageSelect(event)"
+    />
+    <input
+      id="file-input"
+      type="file"
+      class="hidden"
+      onchange="handleFileDropSelect(event)"
     />
 
     <form id="chat-form" onsubmit="handleFormSubmit(event)" class="flex items-center space-x-1.5 sm:space-x-2 max-w-6xl mx-auto">
@@ -275,7 +420,7 @@
           type="text"
           autocomplete="off"
           spellcheck="false"
-          placeholder="Type message, /name, /help, /op, or send [PIC] / [VOICE]..."
+          placeholder="Type message, /help, /riddle, /ttl, or send [PIC] / [FILE] / [VOICE]..."
           class="w-full bg-transparent text-[#00ff41] focus:outline-none font-mono text-sm sm:text-base pr-2"
         />
       </div>
@@ -284,17 +429,27 @@
         type="button"
         onclick="triggerImageSelect()"
         title="Send a Picture (or paste image from clipboard)"
-        class="px-2.5 sm:px-3 py-1.5 rounded border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-xs tracking-wider transition shrink-0"
+        class="px-2 sm:px-2.5 py-1.5 rounded border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-xs tracking-wider transition shrink-0"
       >
         [PIC]
+      </button>
+
+      <!-- Encrypted File Drop (#8) -->
+      <button
+        type="button"
+        onclick="triggerFileSelect()"
+        title="Send Encrypted File Packet (PDF, ZIP, TXT, Audio, Docs up to 1.5MB)"
+        class="px-2 sm:px-2.5 py-1.5 rounded border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-xs tracking-wider transition shrink-0"
+      >
+        [FILE]
       </button>
 
       <button
         id="voice-btn"
         type="button"
         onclick="toggleVoiceRecording()"
-        title="Record & Send a Voice Note"
-        class="px-2.5 sm:px-3 py-1.5 rounded border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-xs tracking-wider transition shrink-0"
+        title="Record & Send a Voice Note (Uses active Voice FX)"
+        class="px-2 sm:px-2.5 py-1.5 rounded border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-xs tracking-wider transition shrink-0"
       >
         [VOICE]
       </button>
@@ -307,6 +462,259 @@
       </button>
     </form>
   </footer>
+
+  <!-- Modal: Site Information & Complete New User Text Tutorial -->
+  <div id="info-guide-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-6 z-50" onclick="closeInfoGuideModal()">
+    <div class="bg-[#020c04] border-2 border-[#00ff41] rounded-lg max-w-4xl w-full max-h-[88vh] flex flex-col p-4 sm:p-6 glow-box relative" onclick="event.stopPropagation()">
+      <!-- Header -->
+      <div class="flex items-center justify-between border-b subtle-border pb-3 mb-4 shrink-0">
+        <div class="flex items-center space-x-2.5">
+          <span class="riddler-q text-3xl font-bold">?</span>
+          <div>
+            <h2 class="text-sm sm:text-lg font-bold tracking-widest uppercase text-[#00ff41]">RATAALADA-CHAT // SYSTEM DOSSIER &amp; USER MANUAL</h2>
+            <p class="text-[11px] text-emerald-400/80">COMPLETE SITE INFORMATION &amp; STEP-BY-STEP NEW USER TUTORIAL</p>
+          </div>
+        </div>
+        <button onclick="closeInfoGuideModal()" class="text-emerald-400 hover:text-white px-2.5 py-1 border subtle-border rounded text-xs font-bold">CLOSE [ESC]</button>
+      </div>
+
+      <!-- Tab Switcher inside Info Modal -->
+      <div class="flex space-x-2 border-b subtle-border pb-3 mb-4 shrink-0 text-xs">
+        <button id="tab-btn-tutorial" onclick="switchInfoTab('tutorial')" class="px-3 py-1.5 rounded border border-[#00ff41] bg-[#00ff41] text-black font-bold tracking-wider transition">
+          1. NEW USER TUTORIAL (HOW TO USE)
+        </button>
+        <button id="tab-btn-features" onclick="switchInfoTab('features')" class="px-3 py-1.5 rounded border subtle-border bg-[#001a07] text-[#00ff41] hover:bg-[#003311] font-bold tracking-wider transition">
+          2. ALL 10 SPY &amp; ARG FEATURES
+        </button>
+        <button id="tab-btn-about" onclick="switchInfoTab('about')" class="px-3 py-1.5 rounded border subtle-border bg-[#001a07] text-[#00ff41] hover:bg-[#003311] font-bold tracking-wider transition">
+          3. SITE ARCHITECTURE &amp; SECURITY
+        </button>
+      </div>
+
+      <!-- Scrollable Content Body -->
+      <div class="overflow-y-auto pr-2 space-y-5 text-xs sm:text-sm leading-relaxed text-emerald-200/90">
+
+        <!-- TAB 1: STEP-BY-STEP NEW USER TUTORIAL -->
+        <div id="info-tab-tutorial" class="space-y-4">
+          <div class="p-3.5 rounded bg-[#001c08] border border-[#00ff41]/50">
+            <h3 class="text-[#00ff41] font-bold text-sm sm:text-base mb-1">👋 WELCOME TO RATAALADA-CHAT!</h3>
+            <p class="text-xs text-emerald-300/90">
+              <b>Rataalada-Chat</b> is an encrypted, serverless peer-to-peer (P2P) terminal chat inspired by the Riddler's viral <i>rataalada.com</i> terminal from <b>The Batman (2022)</b>. Follow the 5 simple steps below to start chatting across devices!
+            </p>
+          </div>
+
+          <div class="space-y-3">
+            <div class="p-3 rounded border subtle-border bg-black/60">
+              <h4 class="text-[#00ff41] font-bold mb-1">STEP 1: CLAIM YOUR UNIQUE CODENAME (IDENTITY LOGIN)</h4>
+              <p class="text-xs">
+                • When you first open the website, the <b>Terminal Identity Login</b> box appears.<br/>
+                • Type any codename (2–18 characters, e.g., <code>NIGHTWING_01</code>) or click a preset.<br/>
+                • Our <b>Live Global Availability Check</b> verifies in real time that nobody else is using your name (<code>✓ AVAILABLE</code>).<br/>
+                • Your browser remembers your codename automatically! To change it later, click <b><code>ID: [YOUR_NAME] ✎</code></b> in the top bar or type <code>/name NEW_NAME</code>.
+              </p>
+            </div>
+
+            <div class="p-3 rounded border subtle-border bg-black/60">
+              <h4 class="text-[#00ff41] font-bold mb-1">STEP 2: CONNECT WITH A FRIEND OR SECOND DEVICE (6-DIGIT FREQUENCY CODE)</h4>
+              <p class="text-xs">
+                Every chat room has a <b>6-Digit Frequency Code</b> shown at the top-left (e.g., <code>FREQ: 7X9K2M</code>). You have 3 easy ways to connect:<br/>
+                • <b>Option A (Enter Code):</b> Give your 6-digit code to your friend. They click <b><code>JOIN CODE</code></b> at the top-left and type your 6-digit code.<br/>
+                • <b>Option B (Auto-Join Link):</b> Click <b><code>+ INVITE</code></b> in the top-right, copy the direct URL, and send it to your friend on WhatsApp/Discord.<br/>
+                • <b>Option C (Phone QR Scan):</b> Click <b><code>+ INVITE</code></b> and scan the green QR code with your phone camera to link instantly.
+              </p>
+            </div>
+
+            <div class="p-3 rounded border subtle-border bg-black/60">
+              <h4 class="text-[#00ff41] font-bold mb-1">STEP 3: SEND TEXT, PHOTOS, FILES &amp; VOICE NOTES</h4>
+              <p class="text-xs">
+                • <b>Text Chat:</b> Type in the bottom bar and press <code>Enter</code> or click <b><code>SEND [⏎]</code></b>.<br/>
+                • <b>Send Pictures (<code>[PIC]</code>):</b> Click <b><code>[PIC]</code></b> (or press <code>Ctrl + V</code> to paste an image from your clipboard). Click any received photo to view it full-screen or save it.<br/>
+                • <b>Send Files (<code>[FILE]</code>):</b> Click <b><code>[FILE]</code></b> (or drag &amp; drop a file onto the screen) to send PDFs, ZIPs, text files, or audio directly peer-to-peer.<br/>
+                • <b>Send Voice Notes (<code>[VOICE]</code>):</b> Click <b><code>[VOICE]</code></b> to record up to 40 seconds of audio. Try toggling <b><code>🎙️ FX: VENGEANCE</code></b> first to deepen your voice like Batman!
+              </p>
+            </div>
+
+            <div class="p-3 rounded border subtle-border bg-black/60">
+              <h4 class="text-[#00ff41] font-bold mb-1">STEP 4: REPLY, REACT &amp; USE SELF-DESTRUCTING MESSAGES</h4>
+              <p class="text-xs">
+                • <b>Reply &amp; React:</b> On any message in the chat log, click <b><code>[↩ REPLY]</code></b> to quote that message, or click any reaction badge (<code>[!]</code>, <code>[?]</code>, <code>[🦇]</code>, <code>[💀]</code>) to add a live counter!<br/>
+                • <b>Burn-After-Reading (<code>⏱️ TTL</code>):</b> Click <b><code>⏱️ TTL: OFF</code></b> in the subheader to switch between <code>10s</code> or <code>30s</code>. Every message sent with TTL active will count down and self-destruct from both screens automatically.
+              </p>
+            </div>
+
+            <div class="p-3 rounded border subtle-border bg-black/60">
+              <h4 class="text-[#00ff41] font-bold mb-1">STEP 5: USEFUL TERMINAL SLASH COMMANDS</h4>
+              <p class="text-xs font-mono text-emerald-300">
+                <code>/help</code> — Show all terminal commands<br/>
+                <code>/name [codename]</code> — Change your unique username<br/>
+                <code>/join [code]</code> — Switch to a friend's 6-digit frequency code<br/>
+                <code>/riddle</code> — Launch the interactive Riddler ARG puzzle minigame<br/>
+                <code>/ttl [off|10|30]</code> — Toggle self-destructing message timer<br/>
+                <code>/key [passphrase]</code> — Lock room with AES-256 end-to-end encryption<br/>
+                <code>/theme [green|red|amber|cyan]</code> — Switch CRT monitor phosphor color<br/>
+                <code>/burn</code> — Immediately wipe your terminal chat screen
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: ALL 10 NEXT-GEN FEATURES -->
+        <div id="info-tab-features" class="hidden space-y-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="p-3 rounded border subtle-border bg-black/60">
+              <h4 class="text-[#00ff41] font-bold">1. ⏱️ Self-Destructing Messages (TTL)</h4>
+              <p class="text-xs mt-1">Toggle <code>⏱️ TTL: 10s / 30s</code>. Messages display a live countdown timer and dissolve into static on all devices when time expires.</p>
+            </div>
+            <div class="p-3 rounded border subtle-border bg-black/60">
+              <h4 class="text-[#00ff41] font-bold">2. 🕵️ Boss Key / Panic Stealth Mode</h4>
+              <p class="text-xs mt-1">Press the <code>~</code> (Backquote) key or click <code>STEALTH</code> at the top-right to instantly disguise the chat as a Linux Kernel Compiler terminal.</p>
+            </div>
+            <div class="p-3 rounded border subtle-border bg-black/60">
+              <h4 class="text-[#00ff41] font-bold">3. 🔐 AES-256 Room Passphrase Lock</h4>
+              <p class="text-xs mt-1">Click <code>🔐 E2EE KEY</code> to set a secret room password. Uses Web Crypto API (PBKDF2 + AES-GCM) so nobody without the key can read messages.</p>
+            </div>
+            <div class="p-3 rounded border subtle-border bg-black/60">
+              <h4 class="text-[#00ff41] font-bold">4. ❓ Interactive Riddler ARG Minigame</h4>
+              <p class="text-xs mt-1">Click <code>? RIDDLE</code> or type <code>/riddle</code> to solve 3 canonical riddles from <i>The Batman</i> and unlock the <code>[🦇 GCPD_VERIFIED]</code> badge.</p>
+            </div>
+            <div class="p-3 rounded border subtle-border bg-black/60">
+              <h4 class="text-[#00ff41] font-bold">5. 🎙️ Bat-Vocoder Voice Changer FX</h4>
+              <p class="text-xs mt-1">Click <code>🎙️ FX</code> to cycle between <code>NORMAL</code>, <code>VENGEANCE</code> (deep Batman pitch modulator), and <code>ROGUE</code> (anonymous pitch).</p>
+            </div>
+            <div class="p-3 rounded border subtle-border bg-black/60">
+              <h4 class="text-[#00ff41] font-bold">6. 🖥️ CRT Phosphor Theme Switcher</h4>
+              <p class="text-xs mt-1">Click <code>CRT: GREEN</code> to switch between Classic Riddler Green, The Batman Crimson Red, Batcomputer Tactical Amber, and Wayne Cyan.</p>
+            </div>
+            <div class="p-3 rounded border subtle-border bg-black/60">
+              <h4 class="text-[#00ff41] font-bold">7. 👥 Live Connected Nodes Drawer</h4>
+              <p class="text-xs mt-1">Click the <code>MESH SECURE (X NODES)</code> badge to see everyone in your room. The Owner (<code>[★ BATMAN]</code>) gets one-click KICK and MUTE buttons.</p>
+            </div>
+            <div class="p-3 rounded border subtle-border bg-black/60">
+              <h4 class="text-[#00ff41] font-bold">8. 📁 Encrypted P2P File Drop</h4>
+              <p class="text-xs mt-1">Click <code>[FILE]</code> or drag-and-drop any file onto the terminal to transmit documents, archives, or audio directly to peers.</p>
+            </div>
+            <div class="p-3 rounded border subtle-border bg-black/60">
+              <h4 class="text-[#00ff41] font-bold">9. ↩ Direct Replies &amp; ASCII Reactions</h4>
+              <p class="text-xs mt-1">Quote any message with <code>[↩ REPLY]</code> or click terminal reaction badges (<code>[!]</code>, <code>[?]</code>, <code>[✓]</code>, <code>[🦇]</code>, <code>[💀]</code>) synced across all peers.</p>
+            </div>
+            <div class="p-3 rounded border subtle-border bg-black/60">
+              <h4 class="text-yellow-400 font-bold">10. ⚡ Owner Matrix Glitch &amp; Broadcast</h4>
+              <p class="text-xs mt-1">Exclusive to <code>[★ BATMAN]</code>: Trigger site-wide emergency red broadcasts, site-wide burns, or shake everyone's monitor with <code>⚡ GLITCH ALL</code>.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: SITE ARCHITECTURE & SECURITY -->
+        <div id="info-tab-about" class="hidden space-y-4">
+          <div class="p-3.5 rounded border subtle-border bg-black/60 space-y-2">
+            <h4 class="text-[#00ff41] font-bold text-sm">🛡️ ZERO-DATABASE P2P MESH ARCHITECTURE</h4>
+            <p class="text-xs">
+              Unlike traditional chat apps that store every message you type inside a central corporate database, <b>Rataalada-Chat</b> transmits packets directly between connected browsers using <b>WebRTC DataChannels</b>, <b>Multi-Broker WSS TLS Relays (Port 443)</b>, and local <b>BroadcastChannel</b> sync. Once you close your tab or click <code>BURN</code>, your messages are gone forever.
+            </p>
+          </div>
+
+          <div class="p-3.5 rounded border subtle-border bg-black/60 space-y-2">
+            <h4 class="text-[#00ff41] font-bold text-sm">🔒 A+ ENTERPRISE SECURITY HEADERS &amp; AES-256-GCM</h4>
+            <p class="text-xs">
+              • <b>Web Crypto API (AES-256-GCM):</b> When you set a Room Passphrase via <code>🔐 E2EE KEY</code>, your passphrase derives a 256-bit cryptographic key using 100,000 iterations of PBKDF2-SHA256 right inside your browser. Payloads are encrypted with a random 96-bit IV before leaving your device.<br/>
+              • <b>Hardened HTTP Headers:</b> Protected by Strict-Transport-Security (HSTS), X-Frame-Options (SAMEORIGIN), X-Content-Type-Options (nosniff), Referrer-Policy, Permissions-Policy, and Content-Security-Policy.
+            </p>
+          </div>
+
+          <div class="p-3.5 rounded border border-yellow-500/60 bg-yellow-950/10 space-y-1">
+            <h4 class="text-yellow-400 font-bold text-sm">★ VERIFIED OWNER IDENTITY: [★ BATMAN]</h4>
+            <p class="text-xs text-yellow-200/80">
+              The username <code>BATMAN</code> (displayed in gold as <code>[★ BATMAN]</code>) is cryptographically reserved for the Website Owner. Regular users cannot claim or spoof this identity.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="border-t subtle-border pt-3 mt-4 flex items-center justify-between text-xs shrink-0">
+        <span class="text-emerald-500/80">TIP: You can reopen this guide anytime by clicking <b>📖 GUIDE &amp; INFO</b> at the top.</span>
+        <button onclick="closeInfoGuideModal()" class="px-4 py-1.5 rounded border border-[#00ff41] bg-[#00ff41] text-black font-bold tracking-wider hover:bg-emerald-300 transition">
+          ENTER TERMINAL [⏎]
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Interactive Riddler ARG Minigame (#4) -->
+  <div id="riddle-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center p-4 z-50" onclick="closeRiddleModal()">
+    <div class="bg-[#020c04] border-2 border-[#00ff41] rounded-lg max-w-lg w-full p-5 glow-box relative" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between border-b subtle-border pb-3 mb-4">
+        <div class="flex items-center space-x-2">
+          <span class="riddler-q text-3xl font-bold">?</span>
+          <h2 class="text-sm sm:text-base font-bold tracking-widest uppercase text-[#00ff41]">RATAALADA.COM // RIDDLE CHALLENGE</h2>
+        </div>
+        <button onclick="closeRiddleModal()" class="text-emerald-400 hover:text-white px-2 py-0.5 border subtle-border rounded text-xs">ESC</button>
+      </div>
+
+      <div id="riddle-game-body" class="space-y-4">
+        <div class="flex items-center justify-between text-xs text-emerald-400">
+          <span id="riddle-progress-label" class="font-bold">RIDDLE 1 OF 3</span>
+          <span class="text-[11px] bg-[#00240b] px-2 py-0.5 rounded border subtle-border">REWARD: [🦇 GCPD_VERIFIED] BADGE</span>
+        </div>
+
+        <div class="p-4 rounded bg-black border border-[#00ff41]/60 text-sm sm:text-base text-[#00ff41] font-bold tracking-wide leading-relaxed" id="riddle-question-box">
+          "THE LESS OF THEM YOU HAVE, THE MORE ONE IS WORTH."
+        </div>
+
+        <form onsubmit="submitRiddleAnswer(event)" class="space-y-3">
+          <input
+            id="riddle-answer-input"
+            type="text"
+            autocomplete="off"
+            placeholder="TYPE YOUR ANSWER..."
+            class="w-full bg-black border-2 border-[#00ff41] px-3 py-2 rounded text-center text-base font-bold tracking-widest text-[#00ff41] uppercase focus:outline-none"
+          />
+          <div id="riddle-feedback" class="hidden text-xs font-bold text-center"></div>
+          <div class="flex justify-between items-center pt-1">
+            <button type="button" onclick="showRiddleHint()" class="text-xs underline text-emerald-400 hover:text-[#00ff41]">NEED A HINT?</button>
+            <button type="submit" class="px-4 py-1.5 rounded border border-[#00ff41] bg-[#00ff41] text-black font-bold text-xs tracking-wider hover:bg-emerald-300 transition">
+              SUBMIT ANSWER [⏎]
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: AES-256 E2EE Room Passphrase Lock (#3) -->
+  <div id="e2ee-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center p-4 z-50" onclick="closeE2eeModal()">
+    <div class="bg-[#020c04] border-2 border-[#00ff41] rounded-lg max-w-md w-full p-5 glow-box relative" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between border-b subtle-border pb-3 mb-4">
+        <div class="flex items-center space-x-2">
+          <span class="text-lg">🔐</span>
+          <h2 class="text-sm sm:text-base font-bold tracking-widest uppercase text-[#00ff41]">AES-256 ROOM PASSPHRASE</h2>
+        </div>
+        <button onclick="closeE2eeModal()" class="text-emerald-400 hover:text-white px-2 py-0.5 border subtle-border rounded text-xs">ESC</button>
+      </div>
+
+      <form onsubmit="submitE2eeModal(event)" class="space-y-4">
+        <p class="text-xs text-emerald-300/90 leading-relaxed">
+          Set an optional secret <b>AES-256-GCM Passphrase</b> for this room. Only devices that enter the exact same passphrase will be able to decrypt and read messages. Leave blank to disable:
+        </p>
+        <input
+          id="e2ee-pass-input"
+          type="password"
+          autocomplete="off"
+          placeholder="ENTER ROOM PASSPHRASE (OR LEAVE BLANK)"
+          class="w-full bg-black border-2 border-[#00ff41] px-3 py-2.5 rounded text-center text-sm font-bold tracking-widest text-[#00ff41] focus:outline-none"
+        />
+        <div class="flex justify-end space-x-2">
+          <button type="button" onclick="clearE2eePassphrase()" class="px-3 py-1.5 rounded border border-red-500/60 text-red-400 text-xs hover:bg-red-950/40">
+            REMOVE LOCK
+          </button>
+          <button type="submit" class="px-4 py-1.5 rounded border border-[#00ff41] bg-[#00ff41] text-black font-bold text-xs tracking-wider hover:bg-emerald-300 transition">
+            APPLY AES-256 KEY [⏎]
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- Modal: Fixed / Changeable Username Login -->
   <div id="username-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center p-4 z-50" onclick="closeUsernameModal()">
@@ -355,13 +763,18 @@
           Please enter a valid, available username (2–18 characters).
         </div>
 
-        <div class="flex justify-end space-x-2 pt-1">
-          <button id="username-cancel-btn" type="button" onclick="closeUsernameModal()" class="px-3 py-1.5 rounded border subtle-border text-xs hover:bg-emerald-950">
-            CANCEL
+        <div class="flex justify-between items-center pt-1">
+          <button type="button" onclick="closeUsernameModal(); openInfoGuideModal();" class="text-[11px] underline text-emerald-400 hover:text-[#00ff41]">
+            📖 New User? Read Tutorial
           </button>
-          <button id="username-submit-btn" type="submit" class="px-4 py-1.5 rounded border border-[#00ff41] bg-[#00ff41] text-black font-bold text-xs tracking-wider hover:bg-emerald-300 transition">
-            CLAIM &amp; LOGIN [⏎]
-          </button>
+          <div class="flex space-x-2">
+            <button id="username-cancel-btn" type="button" onclick="closeUsernameModal()" class="px-3 py-1.5 rounded border subtle-border text-xs hover:bg-emerald-950">
+              CANCEL
+            </button>
+            <button id="username-submit-btn" type="submit" class="px-4 py-1.5 rounded border border-[#00ff41] bg-[#00ff41] text-black font-bold text-xs tracking-wider hover:bg-emerald-300 transition">
+              CLAIM &amp; LOGIN [⏎]
+            </button>
+          </div>
         </div>
       </form>
     </div>
@@ -516,7 +929,7 @@
       <div class="space-y-4 text-xs sm:text-sm">
         <div class="p-3 rounded bg-[#001c08] border subtle-border">
           <p class="text-emerald-400 font-bold mb-1">METHOD 1: 6-DIGIT FREQUENCY CODE</p>
-          <p class="text-emerald-200/80 text-xs mb-2">Open your site on the other device, click <b>JOIN FRIEND'S CODE</b>, and enter:</p>
+          <p class="text-emerald-200/80 text-xs mb-2">Open your site on the other device, click <b>JOIN CODE</b>, and enter:</p>
           <div class="flex items-center justify-between bg-black border border-[#00ff41] px-3 py-2 rounded">
             <span id="modal-freq-code" class="text-xl font-bold tracking-[0.25em] text-[#00ff41]">------</span>
             <button onclick="copyFreqCode()" class="px-2.5 py-1 bg-[#003b14] hover:bg-[#00ff41] hover:text-black text-xs font-bold rounded transition">
@@ -659,14 +1072,43 @@
     let isRoomLocked = false;
     let mutedUsers = new Set();
 
+    // New v6.0 Feature States
+    let ttlSeconds = 0; // 0 = OFF, 10 = 10s, 30 = 30s
+    let voiceFxMode = 'NORMAL'; // NORMAL, VENGEANCE, ROGUE
+    let crtThemes = ['GREEN', 'RED', 'AMBER', 'CYAN'];
+    let crtThemeIdx = 0;
+    let currentReplyContext = null; // { msgId, handle, snippet }
+    let e2eeCryptoKey = null;
+    let e2eePassphraseSet = false;
+    let riddleLevel = 0;
+    let riddlesCompleted = false;
+
+    const RIDDLE_CHALLENGES = [
+      {
+        q: '"THE LESS OF THEM YOU HAVE, THE MORE ONE IS WORTH."',
+        answers: ['FRIEND', 'FRIENDS', 'A FRIEND'],
+        hint: 'HINT: Someone you trust and share secrets with.'
+      },
+      {
+        q: '"I CAN BE EASY OR A DEAD END. CAREFUL WHEN YOU CROSS ME."',
+        answers: ['STREET', 'A STREET', 'ROAD', 'STREETS'],
+        hint: 'HINT: Cars drive on it in Gotham.'
+      },
+      {
+        q: '"THOSE WHO MAKE ME ARE LIKELY TO BREAK ME."',
+        answers: ['LAW', 'THE LAW', 'LAWS', 'PROMISE', 'RULES'],
+        hint: 'HINT: Corrupt GCPD officials claim to uphold it.'
+      }
+    ];
+
     // Obfuscated XOR-73 Byte Array for "rataalda_owner_2026"
     const OWNER_SECRET_BYTES = [59, 40, 61, 40, 40, 37, 45, 40, 22, 38, 62, 39, 44, 59, 22, 123, 121, 123, 127];
     const OWNER_XOR_SALT = 73;
 
     const localClientId = 'node_' + Math.random().toString(36).substring(2, 10);
     const seenPacketIds = new Set();
-    const incomingChunkBuffers = new Map();
     const remotePeers = new Map();
+    const messageElementsMap = new Map();
 
     const GLOBAL_DIRECTORY_TOPIC = 'rataaldachat/v48/global_usernames_query';
     const GLOBAL_CLAIM_PREFIX = 'rataaldachat/v48/claims/';
@@ -705,14 +1147,590 @@
     );
 
     const RIDDLER_RESPONSES = [
-      "<?> SOLO TERMINAL MODE: NO SECOND DEVICE DETECTED ON THIS FREQUENCY YET. CLICK '+ INVITE DEVICE' OR 'JOIN FRIEND'S CODE' TO LINK TWO DEVICES.",
-      "<?> IF YOU ARE JUSTICE, PLEASE DO NOT LIE. SHARE FREQUENCY CODE WITH YOUR OTHER DEVICE TO TEST LIVE P2P.",
+      "<?> SOLO TERMINAL MODE: NO SECOND DEVICE DETECTED ON THIS FREQUENCY YET. CLICK '+ INVITE' OR 'JOIN CODE' TO LINK TWO DEVICES.",
+      "<?> IF YOU ARE JUSTICE, PLEASE DO NOT LIE. TRY CLICKING '? RIDDLE' OR '📖 GUIDE & INFO' AT THE TOP BAR.",
       "<?> ENCRYPTED TUNNEL READY. ONCE YOUR SECOND DEVICE JOINS THIS FREQUENCY CODE, MY AUTO-RESPONDER STEPS ASIDE AUTOMATICALLY."
     ];
     let riddlerIdx = 0;
 
     const outputEl = document.getElementById('terminal-output');
     const inputEl = document.getElementById('terminal-input');
+
+    // ==========================================
+    // SITE INFORMATION & NEW USER TUTORIAL MODAL
+    // ==========================================
+    function openInfoGuideModal(defaultTab = 'tutorial') {
+      initAudio();
+      playBeep(840, 0.05);
+      switchInfoTab(defaultTab);
+      const modal = document.getElementById('info-guide-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeInfoGuideModal() {
+      const modal = document.getElementById('info-guide-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function switchInfoTab(tabName) {
+      const tabs = ['tutorial', 'features', 'about'];
+      tabs.forEach(t => {
+        const content = document.getElementById(`info-tab-${t}`);
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (t === tabName) {
+          content.classList.remove('hidden');
+          btn.className = 'px-3 py-1.5 rounded border border-[#00ff41] bg-[#00ff41] text-black font-bold tracking-wider transition';
+        } else {
+          content.classList.add('hidden');
+          btn.className = 'px-3 py-1.5 rounded border subtle-border bg-[#001a07] text-[#00ff41] hover:bg-[#003311] font-bold tracking-wider transition';
+        }
+      });
+    }
+
+    // ==========================================
+    // FEATURE #1: SELF-DESTRUCTING MESSAGES (TTL)
+    // ==========================================
+    function cycleTtlMode() {
+      const modes = [0, 10, 30];
+      ttlSeconds = modes[(modes.indexOf(ttlSeconds) + 1) % modes.length];
+      document.getElementById('ttl-state').textContent = ttlSeconds === 0 ? 'OFF' : `${ttlSeconds}s 🔥`;
+      playBeep(ttlSeconds > 0 ? 960 : 520, 0.06);
+      appendSystemLine(`[SELF-DESTRUCT TIMER]: ${ttlSeconds === 0 ? 'DISABLED' : `ACTIVE (${ttlSeconds} SECONDS BURN-AFTER-READING)`}`, 'dim');
+    }
+
+    function attachTtlCountdown(rowElement, seconds) {
+      if (!seconds || seconds <= 0) return;
+      let remaining = Number(seconds);
+      const badge = document.createElement('span');
+      badge.className = 'ml-2 px-1.5 py-0.5 rounded bg-red-950/80 border border-red-500 text-red-300 text-[10px] font-bold animate-pulse';
+      badge.textContent = `🔥 ${remaining}s`;
+
+      const header = rowElement.querySelector('.msg-header-right');
+      if (header) header.prepend(badge);
+
+      const timer = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+          clearInterval(timer);
+          rowElement.innerHTML = `<div class="text-xs text-emerald-700 italic font-mono">[▓▒░ PACKET INCINERATED BY SELF-DESTRUCT PROTOCOL ░▒▓]</div>`;
+          setTimeout(() => {
+            if (rowElement.parentNode) rowElement.remove();
+          }, 1200);
+        } else {
+          badge.textContent = `🔥 ${remaining}s`;
+        }
+      }, 1000);
+    }
+
+    // ==========================================
+    // FEATURE #2: BOSS KEY / PANIC STEALTH MODE
+    // ==========================================
+    function toggleStealthMode() {
+      const overlay = document.getElementById('stealth-overlay');
+      const isHidden = overlay.classList.contains('hidden');
+      if (isHidden) {
+        overlay.classList.remove('hidden');
+        document.title = 'ubuntu@prod-cluster-node04: ~/kernel-build';
+      } else {
+        overlay.classList.add('hidden');
+        document.title = 'rataalada-chat // encrypted terminal';
+        inputEl.focus();
+      }
+    }
+
+    // ==========================================
+    // FEATURE #3: AES-256 E2EE ROOM PASSPHRASE
+    // ==========================================
+    function openE2eeModal() {
+      initAudio();
+      playBeep(780, 0.05);
+      const modal = document.getElementById('e2ee-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => document.getElementById('e2ee-pass-input').focus(), 50);
+    }
+
+    function closeE2eeModal() {
+      const modal = document.getElementById('e2ee-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    async function deriveAesKey(passphrase) {
+      const enc = new TextEncoder();
+      const keyMaterial = await window.crypto.subtle.importKey(
+        'raw',
+        enc.encode(passphrase),
+        { name: 'PBKDF2' },
+        false,
+        ['deriveKey']
+      );
+      return window.crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: enc.encode('rataalada_salt_' + roomId),
+          iterations: 100000,
+          hash: 'SHA-256'
+        },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt']
+      );
+    }
+
+    async function submitE2eeModal(e) {
+      e.preventDefault();
+      const val = document.getElementById('e2ee-pass-input').value.trim();
+      closeE2eeModal();
+      if (!val) {
+        clearE2eePassphrase();
+        return;
+      }
+      await setRoomAesPassphrase(val);
+    }
+
+    async function setRoomAesPassphrase(passphrase) {
+      try {
+        e2eeCryptoKey = await deriveAesKey(passphrase);
+        e2eePassphraseSet = true;
+        document.getElementById('e2ee-state').textContent = 'LOCKED (AES-256)';
+        document.getElementById('e2ee-btn').classList.add('border-[#00ff41]', 'text-[#00ff41]');
+        playConnectChime();
+        appendSystemLine(`[🔐 AES-256-GCM E2EE ACTIVE] Outgoing messages are now encrypted with your Room Passphrase.`, 'highlight');
+      } catch (err) {
+        appendSystemLine(`[ERROR] Failed to initialize Web Crypto AES-256 key.`, 'danger');
+      }
+    }
+
+    function clearE2eePassphrase() {
+      e2eeCryptoKey = null;
+      e2eePassphraseSet = false;
+      document.getElementById('e2ee-pass-input').value = '';
+      document.getElementById('e2ee-state').textContent = 'OPEN';
+      closeE2eeModal();
+      appendSystemLine(`[🔓 E2EE PASSPHRASE REMOVED] Reverted to standard frequency channel.`, 'dim');
+    }
+
+    async function encryptTextAes(plainText) {
+      if (!e2eeCryptoKey) return null;
+      const iv = window.crypto.getRandomValues(new Uint8Array(12));
+      const encoded = new TextEncoder().encode(plainText);
+      const cipherBuf = await window.crypto.subtle.encrypt({ name: 'AES-GCM', iv }, e2eeCryptoKey, encoded);
+      const ivB64 = btoa(String.fromCharCode(...iv));
+      const ctB64 = btoa(String.fromCharCode(...new Uint8Array(cipherBuf)));
+      return `${ivB64}:${ctB64}`;
+    }
+
+    async function decryptTextAes(payloadStr) {
+      if (!e2eeCryptoKey || !payloadStr || !payloadStr.includes(':')) return null;
+      try {
+        const [ivB64, ctB64] = payloadStr.split(':');
+        const iv = Uint8Array.from(atob(ivB64), c => c.charCodeAt(0));
+        const ct = Uint8Array.from(atob(ctB64), c => c.charCodeAt(0));
+        const decBuf = await window.crypto.subtle.decrypt({ name: 'AES-GCM', iv }, e2eeCryptoKey, ct);
+        return new TextDecoder().decode(decBuf);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // ==========================================
+    // FEATURE #4: RIDDLER PUZZLE MINIGAME (/riddle)
+    // ==========================================
+    function openRiddleModal() {
+      initAudio();
+      playBeep(740, 0.06);
+      updateRiddleUI();
+      const modal = document.getElementById('riddle-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => document.getElementById('riddle-answer-input').focus(), 60);
+    }
+
+    function closeRiddleModal() {
+      const modal = document.getElementById('riddle-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function updateRiddleUI() {
+      const current = RIDDLE_CHALLENGES[riddleLevel % RIDDLE_CHALLENGES.length];
+      document.getElementById('riddle-progress-label').textContent = `RIDDLE ${riddleLevel + 1} OF ${RIDDLE_CHALLENGES.length}`;
+      document.getElementById('riddle-question-box').textContent = current.q;
+      document.getElementById('riddle-answer-input').value = '';
+      document.getElementById('riddle-feedback').classList.add('hidden');
+    }
+
+    function showRiddleHint() {
+      const current = RIDDLE_CHALLENGES[riddleLevel % RIDDLE_CHALLENGES.length];
+      const fb = document.getElementById('riddle-feedback');
+      fb.textContent = current.hint;
+      fb.className = 'text-xs font-bold text-center text-amber-400';
+      fb.classList.remove('hidden');
+    }
+
+    function submitRiddleAnswer(e) {
+      e.preventDefault();
+      const ans = document.getElementById('riddle-answer-input').value.trim().toUpperCase();
+      if (!ans) return;
+      const current = RIDDLE_CHALLENGES[riddleLevel % RIDDLE_CHALLENGES.length];
+      const fb = document.getElementById('riddle-feedback');
+      fb.classList.remove('hidden');
+
+      if (current.answers.includes(ans)) {
+        playConnectChime();
+        riddleLevel++;
+        if (riddleLevel >= RIDDLE_CHALLENGES.length) {
+          riddlesCompleted = true;
+          riddleLevel = 0;
+          document.getElementById('riddler-solved-badge').classList.remove('hidden');
+          closeRiddleModal();
+          appendSystemLine(`========================================================`, 'highlight');
+          appendSystemLine(`[? RIDDLER CHALLENGE SOLVED] JUSTICE IS DONE. UNLOCKED [🦇 GCPD_VERIFIED] CLEARANCE BADGE!`, 'highlight');
+          appendSystemLine(`========================================================`, 'highlight');
+        } else {
+          fb.textContent = '✓ CORRECT! LOADING NEXT RIDDLE...';
+          fb.className = 'text-xs font-bold text-center text-[#00ff41]';
+          setTimeout(updateRiddleUI, 700);
+        }
+      } else {
+        playBeep(190, 0.25, 'sawtooth');
+        fb.textContent = '✕ INCORRECT. "IF YOU ARE JUSTICE, PLEASE DO NOT LIE."';
+        fb.className = 'text-xs font-bold text-center text-red-400';
+      }
+    }
+
+    // ==========================================
+    // FEATURE #5: VOICE CHANGER / BAT-VOCODER FX
+    // ==========================================
+    function cycleVoiceFx() {
+      const modes = ['NORMAL', 'VENGEANCE', 'ROGUE'];
+      voiceFxMode = modes[(modes.indexOf(voiceFxMode) + 1) % modes.length];
+      document.getElementById('voice-fx-label').textContent = voiceFxMode;
+      document.getElementById('rec-fx-indicator').textContent = voiceFxMode;
+      playBeep(voiceFxMode === 'VENGEANCE' ? 320 : 820, 0.07, 'sawtooth');
+      appendSystemLine(`[VOICE MODULATOR FX]: ${voiceFxMode}`, 'dim');
+    }
+
+    // ==========================================
+    // FEATURE #6: CRT PHOSPHOR THEME SWITCHER
+    // ==========================================
+    function cycleCrtTheme(forcedTheme = null) {
+      if (forcedTheme) {
+        const idx = crtThemes.indexOf(forcedTheme.toUpperCase());
+        if (idx !== -1) crtThemeIdx = idx;
+      } else {
+        crtThemeIdx = (crtThemeIdx + 1) % crtThemes.length;
+      }
+      const theme = crtThemes[crtThemeIdx];
+      const body = document.getElementById('terminal-body');
+      body.classList.remove('theme-red', 'theme-amber', 'theme-cyan');
+      if (theme === 'RED') body.classList.add('theme-red');
+      if (theme === 'AMBER') body.classList.add('theme-amber');
+      if (theme === 'CYAN') body.classList.add('theme-cyan');
+
+      document.getElementById('crt-theme-label').textContent = theme;
+      playBeep(860, 0.05);
+    }
+
+    // ==========================================
+    // FEATURE #7: LIVE CONNECTED NODES DRAWER
+    // ==========================================
+    function toggleNodesDrawer() {
+      playBeep(760, 0.04);
+      const drawer = document.getElementById('nodes-drawer');
+      drawer.classList.toggle('hidden');
+      renderNodesDrawerList();
+    }
+
+    function renderNodesDrawerList() {
+      const listEl = document.getElementById('nodes-list');
+      if (!listEl) return;
+      listEl.innerHTML = '';
+
+      // Self card
+      const selfDiv = document.createElement('div');
+      selfDiv.className = 'p-2 rounded border border-[#00ff41]/60 bg-[#00220c] flex items-center justify-between';
+      selfDiv.innerHTML = `
+        <div class="truncate">
+          <span class="font-bold text-[#00ff41]">${myHandle}</span>
+          <span class="text-[10px] text-emerald-400 ml-1">(YOU)</span>
+        </div>
+        <span class="text-[10px] px-1.5 py-0.5 rounded bg-black text-[#00ff41]">ONLINE</span>
+      `;
+      listEl.appendChild(selfDiv);
+
+      if (remotePeers.size === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'text-emerald-500/70 italic text-[11px] p-2';
+        empty.textContent = 'No other peer nodes on this frequency yet. Click + INVITE to link another device.';
+        listEl.appendChild(empty);
+        return;
+      }
+
+      for (const [peerId, info] of remotePeers.entries()) {
+        const item = document.createElement('div');
+        item.className = 'p-2 rounded border subtle-border bg-black/60 flex flex-col space-y-1.5';
+        const isMuted = mutedUsers.has(String(info.handle).toUpperCase());
+
+        const topRow = document.createElement('div');
+        topRow.className = 'flex items-center justify-between';
+        topRow.innerHTML = `
+          <span class="font-bold ${info.isOperator ? 'text-yellow-400' : 'text-[#00ff41]'} truncate">${info.handle}</span>
+          <span class="text-[10px] text-emerald-400">ACTIVE</span>
+        `;
+        item.appendChild(topRow);
+
+        if (isOperator) {
+          const actions = document.createElement('div');
+          actions.className = 'flex items-center space-x-1.5 pt-1 border-t border-emerald-950';
+
+          const kickBtn = document.createElement('button');
+          kickBtn.className = 'flex-1 py-0.5 rounded border border-red-500 text-red-400 hover:bg-red-500 hover:text-black font-bold text-[10px] transition';
+          kickBtn.textContent = 'KICK EJECT';
+          kickBtn.onclick = () => ownerKickUser(info.handle);
+
+          const muteBtn = document.createElement('button');
+          muteBtn.className = 'flex-1 py-0.5 rounded border border-amber-500 text-amber-300 hover:bg-amber-400 hover:text-black font-bold text-[10px] transition';
+          muteBtn.textContent = isMuted ? 'UNMUTE' : 'MUTE';
+          muteBtn.onclick = () => ownerToggleMuteUser(info.handle);
+
+          actions.appendChild(kickBtn);
+          actions.appendChild(muteBtn);
+          item.appendChild(actions);
+        }
+
+        listEl.appendChild(item);
+      }
+    }
+
+    function ownerKickUser(targetHandle) {
+      if (!isOperator || !targetHandle) return;
+      sendPacket({ type: 'KICK_USER', targetHandle, handle: myHandle });
+      appendSystemLine(`[★ OPERATOR] Ejected ${targetHandle} from frequency.`, 'warning');
+      playBeep(300, 0.15, 'sawtooth');
+    }
+
+    function ownerToggleMuteUser(targetHandle) {
+      if (!isOperator || !targetHandle) return;
+      const key = String(targetHandle).toUpperCase();
+      if (mutedUsers.has(key)) {
+        mutedUsers.delete(key);
+        appendSystemLine(`[★ OPERATOR] Unmuted ${targetHandle}.`, 'highlight');
+      } else {
+        mutedUsers.add(key);
+        appendSystemLine(`[★ OPERATOR] Muted ${targetHandle}.`, 'warning');
+      }
+      renderNodesDrawerList();
+    }
+
+    // ==========================================
+    // FEATURE #8: ENCRYPTED P2P FILE DROP ([FILE])
+    // ==========================================
+    function triggerFileSelect() {
+      initAudio();
+      playBeep(740, 0.04);
+      document.getElementById('file-input').click();
+    }
+
+    function handleFileDropSelect(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      processAndSendGenericFile(file);
+      event.target.value = '';
+    }
+
+    window.addEventListener('dragover', (e) => { e.preventDefault(); });
+    window.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        const file = e.dataTransfer.files[0];
+        if (file.type.startsWith('image/')) {
+          processAndSendImageFile(file);
+        } else {
+          processAndSendGenericFile(file);
+        }
+      }
+    });
+
+    function processAndSendGenericFile(file) {
+      if (file.size > 1600000) {
+        showToast('MAX P2P FILE SIZE IS 1.5 MB');
+        appendSystemLine(`[FILE DROP ERROR] "${file.name}" exceeds 1.5MB P2P packet limit.`, 'warning');
+        return;
+      }
+
+      appendSystemLine(`[ENCRYPTING & TRANSMITTING FILE PACKET: ${file.name} (${Math.round(file.size / 1024)} KB)...]`, 'dim');
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target.result;
+        const timestamp = new Date().toLocaleTimeString([], { hour12: false });
+        const msgId = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
+        playBeep(900, 0.07, 'triangle');
+        renderFileMessage({
+          msgId,
+          handle: myHandle,
+          fileName: file.name,
+          fileSize: file.size,
+          fileData: dataUrl,
+          isOperatorMsg: isOperator,
+          timestamp,
+          isSelf: true,
+          ttl: ttlSeconds
+        });
+
+        sendPacket({
+          type: 'FILE_MSG',
+          msgId,
+          handle: myHandle,
+          fileName: file.name,
+          fileSize: file.size,
+          fileData: dataUrl,
+          isOperator,
+          timestamp,
+          ttl: ttlSeconds
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderFileMessage({ msgId, handle, fileName, fileSize, fileData, isOperatorMsg, timestamp, isSelf, ttl }) {
+      const row = document.createElement('div');
+      row.className = `p-2.5 rounded border ${
+        isSelf
+          ? (isOperator ? 'border-yellow-500/70 bg-[#141200]/80 operator-glow' : 'border-emerald-800/60 bg-[#021206]/70')
+          : isOperatorMsg
+          ? 'border-yellow-500/80 bg-[#141200]/90 operator-glow'
+          : 'border-[#00ff41]/60 bg-[#00240b]/60 glow-box'
+      }`;
+
+      const header = document.createElement('div');
+      header.className = 'flex items-center justify-between text-xs mb-2';
+      header.innerHTML = `
+        <span class="${isOperatorMsg || (isSelf && isOperator) ? 'text-yellow-400' : 'text-[#00ff41]'} font-bold">${handle} ${isSelf ? '(YOU)' : ''} // [FILE_PACKET]</span>
+        <div class="msg-header-right flex items-center space-x-2">
+          <span class="text-emerald-600 text-[11px]">${timestamp || ''}</span>
+        </div>
+      `;
+
+      const kb = Math.max(1, Math.round((fileSize || 1024) / 1024));
+      const box = document.createElement('div');
+      box.className = 'flex items-center justify-between bg-black/80 border border-[#00ff41]/50 px-3 py-2 rounded text-xs';
+      box.innerHTML = `
+        <div class="truncate pr-3">
+          <div class="font-bold text-[#00ff41] truncate">📁 ${fileName || 'encrypted_packet.bin'}</div>
+          <div class="text-[10px] text-emerald-500">[██████████] 100% • ${kb} KB</div>
+        </div>
+      `;
+
+      const dlLink = document.createElement('a');
+      dlLink.href = fileData;
+      dlLink.download = fileName || 'rataalada_file';
+      dlLink.className = 'px-2.5 py-1 rounded border border-[#00ff41] bg-[#002b0f] hover:bg-[#00ff41] hover:text-black font-bold text-xs shrink-0 transition';
+      dlLink.textContent = 'DOWNLOAD';
+
+      box.appendChild(dlLink);
+      row.appendChild(header);
+      row.appendChild(box);
+      if (msgId) {
+        messageElementsMap.set(msgId, row);
+        appendReactionAndReplyBar(row, msgId, handle, `[FILE: ${fileName}]`);
+      }
+      outputEl.appendChild(row);
+      attachTtlCountdown(row, ttl);
+      scrollToBottom();
+    }
+
+    // ==========================================
+    // FEATURE #9: DIRECT REPLIES & ASCII REACTIONS
+    // ==========================================
+    function setReplyTarget(msgId, handle, snippet) {
+      currentReplyContext = {
+        msgId,
+        handle,
+        snippet: String(snippet || '').substring(0, 60)
+      };
+      document.getElementById('reply-target-handle').textContent = handle;
+      document.getElementById('reply-target-text').textContent = currentReplyContext.snippet;
+      document.getElementById('reply-preview-bar').classList.remove('hidden');
+      inputEl.focus();
+    }
+
+    function cancelReply() {
+      currentReplyContext = null;
+      document.getElementById('reply-preview-bar').classList.add('hidden');
+    }
+
+    function appendReactionAndReplyBar(rowEl, msgId, handle, snippet) {
+      const bar = document.createElement('div');
+      bar.className = 'flex items-center flex-wrap gap-1.5 mt-2 pt-1.5 border-t border-emerald-950/60 text-[10px]';
+
+      const replyBtn = document.createElement('button');
+      replyBtn.className = 'px-1.5 py-0.5 rounded border subtle-border bg-black/50 hover:bg-[#00ff41] hover:text-black text-emerald-400 font-bold transition';
+      replyBtn.textContent = '↩ REPLY';
+      replyBtn.onclick = () => setReplyTarget(msgId, handle, snippet);
+      bar.appendChild(replyBtn);
+
+      const badges = ['[!]', '[?]', '[✓]', '[🦇]', '[💀]'];
+      badges.forEach(symbol => {
+        const rBtn = document.createElement('button');
+        rBtn.dataset.symbol = symbol;
+        rBtn.dataset.count = '0';
+        rBtn.className = 'react-btn px-1.5 py-0.5 rounded border subtle-border bg-black/40 hover:border-[#00ff41] text-emerald-300 transition';
+        rBtn.textContent = symbol;
+        rBtn.onclick = () => {
+          applyReactionToDom(msgId, symbol);
+          sendPacket({ type: 'REACTION_ADD', msgId, symbol, handle: myHandle });
+        };
+        bar.appendChild(rBtn);
+      });
+
+      rowEl.appendChild(bar);
+    }
+
+    function applyReactionToDom(msgId, symbol) {
+      const row = messageElementsMap.get(msgId);
+      if (!row) return;
+      const btns = row.querySelectorAll('.react-btn');
+      btns.forEach(btn => {
+        if (btn.dataset.symbol === symbol) {
+          const next = parseInt(btn.dataset.count || '0', 10) + 1;
+          btn.dataset.count = String(next);
+          btn.textContent = `${symbol} ${next}`;
+          btn.classList.add('border-[#00ff41]', 'bg-[#002b0f]', 'text-[#00ff41]', 'font-bold');
+        }
+      });
+    }
+
+    // ==========================================
+    // FEATURE #10: OWNER MATRIX GLITCH PRANK
+    // ==========================================
+    function ownerActionGlitchAll() {
+      if (!isOperator) return;
+      sendGlobalSysopPacket({ type: 'SITE_WIDE_GLITCH' });
+      sendPacket({ type: 'ROOM_GLITCH', handle: myHandle });
+      triggerMatrixGlitchEffect();
+    }
+
+    function triggerMatrixGlitchEffect() {
+      const body = document.getElementById('terminal-body');
+      const overlay = document.getElementById('glitch-overlay');
+      body.classList.add('glitch-active');
+      overlay.classList.remove('hidden');
+
+      playBeep(160, 0.25, 'sawtooth');
+      setTimeout(() => playBeep(110, 0.25, 'square'), 200);
+      setTimeout(() => playBeep(240, 0.3, 'sawtooth'), 420);
+
+      setTimeout(() => {
+        body.classList.remove('glitch-active');
+        overlay.classList.add('hidden');
+      }, 2800);
+    }
 
     // ==========================================
     // PERSISTENT USERNAME LOGIN & AVAILABILITY CHECK
@@ -1240,6 +2258,7 @@
       handleEl.textContent = myHandle;
       handleEl.className = 'font-bold underline text-yellow-400';
       document.getElementById('owner-control-bar').classList.remove('hidden');
+      renderNodesDrawerList();
 
       if (notify) {
         playOperatorChime();
@@ -1270,6 +2289,7 @@
       handleEl.textContent = myHandle;
       handleEl.className = 'font-bold underline';
       document.getElementById('owner-control-bar').classList.add('hidden');
+      renderNodesDrawerList();
       playBeep(300, 0.15);
       appendSystemLine(`[OPERATOR MODE EXITED] Returned to unique handle ${myHandle}.`, 'dim');
       sendPacket({
@@ -1329,6 +2349,7 @@
 
       roomId = sanitized || generateRandomCode();
       remotePeers.clear();
+      renderNodesDrawerList();
 
       try {
         if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
@@ -1676,6 +2697,8 @@
       } else if (data.type === 'SITE_WIDE_BROADCAST') {
         triggerGlobalBroadcastBanner(data.message, `${data.handle || OWNER_FIXED_HANDLE} // ALL FREQUENCIES`);
         appendSystemLine(`[📢 SITE-WIDE EMERGENCY BROADCAST FROM ${data.handle || OWNER_FIXED_HANDLE}]: ${data.message}`, 'danger');
+      } else if (data.type === 'SITE_WIDE_GLITCH') {
+        triggerMatrixGlitchEffect();
       }
     }
 
@@ -1800,7 +2823,7 @@
       });
     }
 
-    function handleRawIncomingData(data, transportSource) {
+    async function handleRawIncomingData(data, transportSource) {
       if (!data || !data.packetId || data.senderId === localClientId) return;
       if (data.roomId && data.roomId !== roomId) return;
       if (seenPacketIds.has(data.packetId)) return;
@@ -1813,6 +2836,7 @@
           lastSeen: Date.now()
         });
         updateConnectionUI();
+        renderNodesDrawerList();
       }
 
       if (data.type === 'PRESENCE_PING' || data.type === 'PRESENCE_HEARTBEAT') {
@@ -1824,37 +2848,77 @@
 
       if (data.type === 'CHAT_MSG') {
         if (mutedUsers.has(String(data.handle).toUpperCase())) return;
+        let displayText = data.text;
+        let displayPlain = data.plainText;
+
+        if (data.isAesEncrypted && data.aesPayload) {
+          const decrypted = await decryptTextAes(data.aesPayload);
+          if (decrypted !== null) {
+            displayText = decrypted;
+            displayPlain = decrypted;
+          } else {
+            displayText = `🔒 [AES-256 ENCRYPTED PACKET // CLICK '🔐 E2EE KEY' TO ENTER ROOM PASSPHRASE]`;
+          }
+        }
+
         renderChatMessage({
+          msgId: data.msgId,
           handle: data.handle,
-          text: data.text,
-          plainText: data.plainText,
+          text: displayText,
+          plainText: displayPlain,
           isCipher: data.isCipher,
           isOperatorMsg: data.isOperator,
           timestamp: data.timestamp,
-          isSelf: false
+          isSelf: false,
+          ttl: data.ttl,
+          replyTo: data.replyTo,
+          verifiedBadge: data.verifiedBadge
         });
         playBeep(880, 0.05);
       } else if (data.type === 'IMAGE_MSG') {
         if (mutedUsers.has(String(data.handle).toUpperCase())) return;
         renderImageMessage({
+          msgId: data.msgId,
           handle: data.handle,
           imageData: data.imageData,
           isOperatorMsg: data.isOperator,
           timestamp: data.timestamp,
-          isSelf: false
+          isSelf: false,
+          ttl: data.ttl
         });
         playBeep(720, 0.08, 'triangle');
+      } else if (data.type === 'FILE_MSG') {
+        if (mutedUsers.has(String(data.handle).toUpperCase())) return;
+        renderFileMessage({
+          msgId: data.msgId,
+          handle: data.handle,
+          fileName: data.fileName,
+          fileSize: data.fileSize,
+          fileData: data.fileData,
+          isOperatorMsg: data.isOperator,
+          timestamp: data.timestamp,
+          isSelf: false,
+          ttl: data.ttl
+        });
+        playBeep(750, 0.08, 'triangle');
       } else if (data.type === 'VOICE_MSG') {
         if (mutedUsers.has(String(data.handle).toUpperCase())) return;
         renderVoiceMessage({
+          msgId: data.msgId,
           handle: data.handle,
           audioData: data.audioData,
           duration: data.duration,
+          voiceFx: data.voiceFx,
           isOperatorMsg: data.isOperator,
           timestamp: data.timestamp,
-          isSelf: false
+          isSelf: false,
+          ttl: data.ttl
         });
         playBeep(780, 0.08, 'triangle');
+      } else if (data.type === 'REACTION_ADD' && data.msgId && data.symbol) {
+        applyReactionToDom(data.msgId, data.symbol);
+      } else if (data.type === 'ROOM_GLITCH') {
+        triggerMatrixGlitchEffect();
       } else if (data.type === 'TYPING') {
         showTypingIndicator(data.handle);
       } else if (data.type === 'RENAME_NOTICE') {
@@ -1876,12 +2940,15 @@
 
     function pruneStalePeers() {
       const now = Date.now();
+      let changed = false;
       for (const [id, info] of remotePeers.entries()) {
         if (now - info.lastSeen > 12000) {
           remotePeers.delete(id);
+          changed = true;
         }
       }
       updateConnectionUI();
+      if (changed) renderNodesDrawerList();
     }
 
     function updateConnectionUI() {
@@ -1935,7 +3002,7 @@
       scrollToBottom();
     }
 
-    function renderChatMessage({ handle, text, plainText, isCipher, isOperatorMsg, timestamp, isSelf, isBot = false }) {
+    function renderChatMessage({ msgId, handle, text, plainText, isCipher, isOperatorMsg, timestamp, isSelf, isBot = false, ttl = 0, replyTo = null, verifiedBadge = false }) {
       const row = document.createElement('div');
       row.className = `p-2.5 rounded border ${
         isSelf
@@ -1950,16 +3017,39 @@
       const header = document.createElement('div');
       header.className = 'flex items-center justify-between text-xs mb-1';
 
+      const authorWrap = document.createElement('div');
+      authorWrap.className = 'flex items-center space-x-1.5';
+
       const authorSpan = document.createElement('span');
       authorSpan.className = isOperatorMsg || (isSelf && isOperator) ? 'text-yellow-400 font-bold' : (isSelf ? 'text-emerald-400 font-bold' : 'text-[#00ff41] font-bold');
       authorSpan.textContent = `${handle} ${isSelf ? '(YOU)' : ''}`;
+      authorWrap.appendChild(authorSpan);
+
+      if (verifiedBadge) {
+        const bSpan = document.createElement('span');
+        bSpan.className = 'text-[10px] px-1 rounded bg-yellow-950 border border-yellow-400 text-yellow-300 font-bold';
+        bSpan.textContent = '🦇 GCPD_VERIFIED';
+        authorWrap.appendChild(bSpan);
+      }
+
+      const rightWrap = document.createElement('div');
+      rightWrap.className = 'msg-header-right flex items-center space-x-2';
 
       const timeSpan = document.createElement('span');
       timeSpan.className = 'text-emerald-600 text-[11px]';
       timeSpan.textContent = timestamp || new Date().toLocaleTimeString([], { hour12: false });
+      rightWrap.appendChild(timeSpan);
 
-      header.appendChild(authorSpan);
-      header.appendChild(timeSpan);
+      header.appendChild(authorWrap);
+      header.appendChild(rightWrap);
+      row.appendChild(header);
+
+      if (replyTo && replyTo.handle) {
+        const quoteDiv = document.createElement('div');
+        quoteDiv.className = 'mb-1.5 px-2 py-1 rounded bg-black/50 border-l-2 border-[#00ff41] text-[11px] text-emerald-400/80 truncate';
+        quoteDiv.textContent = `↩ ${replyTo.handle}: "${replyTo.snippet}"`;
+        row.appendChild(quoteDiv);
+      }
 
       const body = document.createElement('div');
       body.className = isOperatorMsg || (isSelf && isOperator) ? 'text-sm sm:text-base text-yellow-200 break-words tracking-wide' : 'text-sm sm:text-base text-[#00ff41] break-words tracking-wide';
@@ -1985,9 +3075,15 @@
         body.textContent = text;
       }
 
-      row.appendChild(header);
       row.appendChild(body);
+
+      if (msgId && !isBot) {
+        messageElementsMap.set(msgId, row);
+        appendReactionAndReplyBar(row, msgId, handle, plainText || text);
+      }
+
       outputEl.appendChild(row);
+      attachTtlCountdown(row, ttl);
       scrollToBottom();
     }
 
@@ -2049,22 +3145,27 @@
 
           const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.70);
           const timestamp = new Date().toLocaleTimeString([], { hour12: false });
+          const msgId = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
           playBeep(920, 0.06, 'triangle');
           renderImageMessage({
+            msgId,
             handle: myHandle,
             imageData: compressedDataUrl,
             isOperatorMsg: isOperator,
             timestamp,
-            isSelf: true
+            isSelf: true,
+            ttl: ttlSeconds
           });
 
           sendPacket({
             type: 'IMAGE_MSG',
+            msgId,
             handle: myHandle,
             imageData: compressedDataUrl,
             isOperator,
-            timestamp
+            timestamp,
+            ttl: ttlSeconds
           });
         };
         img.src = e.target.result;
@@ -2072,7 +3173,7 @@
       reader.readAsDataURL(file);
     }
 
-    function renderImageMessage({ handle, imageData, isOperatorMsg, timestamp, isSelf }) {
+    function renderImageMessage({ msgId, handle, imageData, isOperatorMsg, timestamp, isSelf, ttl }) {
       const row = document.createElement('div');
       row.className = `p-2.5 rounded border ${
         isSelf
@@ -2084,17 +3185,12 @@
 
       const header = document.createElement('div');
       header.className = 'flex items-center justify-between text-xs mb-2';
-
-      const authorSpan = document.createElement('span');
-      authorSpan.className = isOperatorMsg || (isSelf && isOperator) ? 'text-yellow-400 font-bold' : (isSelf ? 'text-emerald-400 font-bold' : 'text-[#00ff41] font-bold');
-      authorSpan.textContent = `${handle} ${isSelf ? '(YOU)' : ''} // [IMAGE_PACKET]`;
-
-      const timeSpan = document.createElement('span');
-      timeSpan.className = 'text-emerald-600 text-[11px]';
-      timeSpan.textContent = timestamp || new Date().toLocaleTimeString([], { hour12: false });
-
-      header.appendChild(authorSpan);
-      header.appendChild(timeSpan);
+      header.innerHTML = `
+        <span class="${isOperatorMsg || (isSelf && isOperator) ? 'text-yellow-400' : 'text-[#00ff41]'} font-bold">${handle} ${isSelf ? '(YOU)' : ''} // [IMAGE_PACKET]</span>
+        <div class="msg-header-right flex items-center space-x-2">
+          <span class="text-emerald-600 text-[11px]">${timestamp || ''}</span>
+        </div>
+      `;
 
       const imgWrap = document.createElement('div');
       imgWrap.className = 'relative inline-block group cursor-pointer rounded overflow-hidden border border-[#00ff41]/50 bg-black';
@@ -2107,7 +3203,12 @@
       imgWrap.appendChild(imgEl);
       row.appendChild(header);
       row.appendChild(imgWrap);
+      if (msgId) {
+        messageElementsMap.set(msgId, row);
+        appendReactionAndReplyBar(row, msgId, handle, '[IMAGE_PACKET]');
+      }
       outputEl.appendChild(row);
+      attachTtlCountdown(row, ttl);
       scrollToBottom();
     }
 
@@ -2154,8 +3255,28 @@
         audioChunks = [];
         shouldSendRecordedVoice = false;
 
+        const mimeCandidates = [
+          'audio/webm;codecs=opus',
+          'audio/webm',
+          'audio/mp4',
+          'audio/ogg;codecs=opus',
+          'audio/wav'
+        ];
+        let selectedMime = '';
+        if (typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function') {
+          for (const candidate of mimeCandidates) {
+            if (MediaRecorder.isTypeSupported(candidate)) {
+              selectedMime = candidate;
+              break;
+            }
+          }
+        }
+
         try {
-          mediaRecorder = new MediaRecorder(stream, { audioBitsPerSecond: 18000 });
+          const recOptions = selectedMime
+            ? { mimeType: selectedMime, audioBitsPerSecond: 24000 }
+            : { audioBitsPerSecond: 24000 };
+          mediaRecorder = new MediaRecorder(stream, recOptions);
         } catch (e) {
           mediaRecorder = new MediaRecorder(stream);
         }
@@ -2170,35 +3291,44 @@
 
           if (!shouldSendRecordedVoice || audioChunks.length === 0) return;
 
-          const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+          const finalMime = (mediaRecorder && mediaRecorder.mimeType) || selectedMime || 'audio/webm';
+          const audioBlob = new Blob(audioChunks, { type: finalMime });
           const reader = new FileReader();
           reader.onloadend = () => {
             const base64Audio = reader.result;
+            if (!base64Audio || typeof base64Audio !== 'string' || !base64Audio.startsWith('data:')) return;
             const timestamp = new Date().toLocaleTimeString([], { hour12: false });
+            const msgId = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
             playBeep(940, 0.06, 'triangle');
             renderVoiceMessage({
+              msgId,
               handle: myHandle,
               audioData: base64Audio,
               duration: elapsedSeconds,
+              voiceFx: voiceFxMode,
               isOperatorMsg: isOperator,
               timestamp,
-              isSelf: true
+              isSelf: true,
+              ttl: ttlSeconds
             });
 
             sendPacket({
               type: 'VOICE_MSG',
+              msgId,
               handle: myHandle,
               audioData: base64Audio,
               duration: elapsedSeconds,
+              voiceFx: voiceFxMode,
               isOperator,
-              timestamp
+              timestamp,
+              ttl: ttlSeconds
             });
           };
           reader.readAsDataURL(audioBlob);
         };
 
-        mediaRecorder.start();
+        mediaRecorder.start(200);
         isRecordingVoice = true;
         voiceStartTime = Date.now();
         playBeep(520, 0.08, 'sine');
@@ -2241,7 +3371,7 @@
       } catch (e) {}
     }
 
-    function renderVoiceMessage({ handle, audioData, duration, isOperatorMsg, timestamp, isSelf }) {
+    function renderVoiceMessage({ msgId, handle, audioData, duration, voiceFx = 'NORMAL', isOperatorMsg, timestamp, isSelf, ttl }) {
       const row = document.createElement('div');
       row.className = `p-2.5 rounded border ${
         isSelf
@@ -2253,19 +3383,36 @@
 
       const header = document.createElement('div');
       header.className = 'flex items-center justify-between text-xs mb-1.5';
+      header.innerHTML = `
+        <span class="${isOperatorMsg || (isSelf && isOperator) ? 'text-yellow-400' : 'text-[#00ff41]'} font-bold">${handle} ${isSelf ? '(YOU)' : ''} // [VOICE_NOTE • FX:${voiceFx}]</span>
+        <div class="msg-header-right flex items-center space-x-2">
+          <span class="text-emerald-600 text-[11px]">${timestamp || ''}</span>
+        </div>
+      `;
 
-      const authorSpan = document.createElement('span');
-      authorSpan.className = isOperatorMsg || (isSelf && isOperator) ? 'text-yellow-400 font-bold' : (isSelf ? 'text-emerald-400 font-bold' : 'text-[#00ff41] font-bold');
-      authorSpan.textContent = `${handle} ${isSelf ? '(YOU)' : ''} // [VOICE_NOTE]`;
+      const audio = new Audio();
+      audio.preload = 'metadata';
+      if (audioData && typeof audioData === 'string' && (audioData.startsWith('data:audio') || audioData.startsWith('blob:'))) {
+        audio.src = audioData;
+      }
 
-      const timeSpan = document.createElement('span');
-      timeSpan.className = 'text-emerald-600 text-[11px]';
-      timeSpan.textContent = timestamp || new Date().toLocaleTimeString([], { hour12: false });
+      const applyVoiceFxSettings = () => {
+        if (voiceFx === 'VENGEANCE') {
+          audio.preservesPitch = false;
+          audio.mozPreservesPitch = false;
+          audio.webkitPreservesPitch = false;
+          audio.playbackRate = 0.76;
+        } else if (voiceFx === 'ROGUE') {
+          audio.preservesPitch = false;
+          audio.mozPreservesPitch = false;
+          audio.webkitPreservesPitch = false;
+          audio.playbackRate = 1.28;
+        } else {
+          audio.playbackRate = 1.0;
+        }
+      };
+      applyVoiceFxSettings();
 
-      header.appendChild(authorSpan);
-      header.appendChild(timeSpan);
-
-      const audio = new Audio(audioData);
       const playerBox = document.createElement('div');
       playerBox.className = 'flex flex-wrap items-center gap-2.5 bg-black/70 border border-[#00ff41]/40 px-3 py-2 rounded';
 
@@ -2285,10 +3432,64 @@
       timeLabel.className = 'text-xs font-mono text-[#00ff41] shrink-0';
       timeLabel.textContent = `00:00 / ${formatDuration(duration || 1)}`;
 
+      let webAudioSource = null;
+
+      const playFallbackWebAudio = async () => {
+        try {
+          initAudio();
+          if (!audioCtx || !audioData) return;
+          const res = await fetch(audioData);
+          const arrayBuf = await res.arrayBuffer();
+          const decoded = await audioCtx.decodeAudioData(arrayBuf);
+
+          if (webAudioSource) {
+            try { webAudioSource.stop(); } catch (e) {}
+          }
+          webAudioSource = audioCtx.createBufferSource();
+          webAudioSource.buffer = decoded;
+          webAudioSource.playbackRate.value = voiceFx === 'VENGEANCE' ? 0.76 : (voiceFx === 'ROGUE' ? 1.28 : 1.0);
+          webAudioSource.connect(audioCtx.destination);
+          playBtn.textContent = '[⏸ PLAYING]';
+          progressBar.style.width = '100%';
+          webAudioSource.onended = () => {
+            playBtn.textContent = '[▶ PLAY]';
+            progressBar.style.width = '0%';
+            webAudioSource = null;
+          };
+          webAudioSource.start(0);
+        } catch (err) {
+          playBeep(440, 0.15, 'triangle');
+          playBtn.textContent = '[▶ PLAY]';
+          showToast('AUDIO CODEC UNSUPPORTED ON THIS DEVICE');
+        }
+      };
+
       playBtn.onclick = () => {
+        if (webAudioSource) {
+          try { webAudioSource.stop(); } catch (e) {}
+          webAudioSource = null;
+          playBtn.textContent = '[▶ PLAY]';
+          progressBar.style.width = '0%';
+          return;
+        }
+
+        if (!audio.src) {
+          playFallbackWebAudio();
+          return;
+        }
+
         if (audio.paused) {
-          audio.play();
-          playBtn.textContent = '[⏸ PAUSE]';
+          applyVoiceFxSettings();
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                playBtn.textContent = '[⏸ PAUSE]';
+              })
+              .catch(() => {
+                playFallbackWebAudio();
+              });
+          }
         } else {
           audio.pause();
           playBtn.textContent = '[▶ PLAY]';
@@ -2313,11 +3514,16 @@
 
       row.appendChild(header);
       row.appendChild(playerBox);
+      if (msgId) {
+        messageElementsMap.set(msgId, row);
+        appendReactionAndReplyBar(row, msgId, handle, `[VOICE_NOTE (${voiceFx})]`);
+      }
       outputEl.appendChild(row);
+      attachTtlCountdown(row, ttl);
       scrollToBottom();
     }
 
-    function handleFormSubmit(e) {
+    async function handleFormSubmit(e) {
       e.preventDefault();
       const raw = inputEl.value.trim();
       if (!raw) return;
@@ -2343,25 +3549,43 @@
 
       const outgoingText = cipherMode ? encodeToRunes(raw) : raw;
       const timestamp = new Date().toLocaleTimeString([], { hour12: false });
+      const msgId = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+      const replySnapshot = currentReplyContext ? { ...currentReplyContext } : null;
+      cancelReply();
 
       renderChatMessage({
+        msgId,
         handle: myHandle,
         text: outgoingText,
         plainText: raw,
         isCipher: cipherMode,
         isOperatorMsg: isOperator,
         timestamp,
-        isSelf: true
+        isSelf: true,
+        ttl: ttlSeconds,
+        replyTo: replySnapshot,
+        verifiedBadge: riddlesCompleted
       });
+
+      let aesPayload = null;
+      if (e2eePassphraseSet && e2eeCryptoKey) {
+        aesPayload = await encryptTextAes(outgoingText);
+      }
 
       sendPacket({
         type: 'CHAT_MSG',
+        msgId,
         handle: myHandle,
-        text: outgoingText,
-        plainText: raw,
+        text: aesPayload ? '🔒 [AES-256 ENCRYPTED]' : outgoingText,
+        plainText: aesPayload ? '' : raw,
+        isAesEncrypted: !!aesPayload,
+        aesPayload,
         isCipher: cipherMode,
         isOperator,
-        timestamp
+        timestamp,
+        ttl: ttlSeconds,
+        replyTo: replySnapshot,
+        verifiedBadge: riddlesCompleted
       });
 
       if (botMode === 'ON' || (botMode === 'AUTO' && remotePeers.size === 0)) {
@@ -2406,6 +3630,61 @@
           ownerDeop();
           break;
 
+        case '/guide':
+        case '/info':
+        case '/tutorial':
+          openInfoGuideModal('tutorial');
+          break;
+
+        case '/riddle':
+          openRiddleModal();
+          break;
+
+        case '/stealth':
+        case '/panic':
+          toggleStealthMode();
+          break;
+
+        case '/ttl':
+          if (args === '10') ttlSeconds = 30; // cycleTtlMode will step to next or set directly
+          cycleTtlMode();
+          break;
+
+        case '/key':
+          if (!args) openE2eeModal();
+          else setRoomAesPassphrase(args);
+          break;
+
+        case '/theme':
+          cycleCrtTheme(args || null);
+          break;
+
+        case '/glitch':
+          if (!isOperator) {
+            appendSystemLine(`[ACCESS DENIED] /glitch requires [★ BATMAN] owner privileges.`, 'warning');
+            return;
+          }
+          ownerActionGlitchAll();
+          break;
+
+        case '/kick':
+          if (!isOperator) {
+            appendSystemLine(`[ACCESS DENIED] /kick requires [★ BATMAN] owner privileges.`, 'warning');
+            return;
+          }
+          if (!args) appendSystemLine(`Usage: /kick [username]`, 'warning');
+          else ownerKickUser(args);
+          break;
+
+        case '/mute':
+          if (!isOperator) {
+            appendSystemLine(`[ACCESS DENIED] /mute requires [★ BATMAN] owner privileges.`, 'warning');
+            return;
+          }
+          if (!args) appendSystemLine(`Usage: /mute [username]`, 'warning');
+          else ownerToggleMuteUser(args);
+          break;
+
         case '/broadcast':
           if (!isOperator) {
             appendSystemLine(`[ACCESS DENIED] /broadcast requires [★ OPERATOR] owner privileges.`, 'warning');
@@ -2429,16 +3708,21 @@
           break;
 
         case '/help':
-          appendSystemLine(`=== RATAALADA-CHAT v5.0 COMMANDS ===`, 'highlight');
-          appendSystemLine(`/name [new_name] - Change username`);
-          appendSystemLine(`/login         - Open identity login box`);
+          appendSystemLine(`=== RATAALADA-CHAT v6.0 COMMANDS ===`, 'highlight');
+          appendSystemLine(`/guide         - Open Complete Site Info & New User Tutorial`);
+          appendSystemLine(`/riddle        - Play Interactive Riddler ARG Minigame`);
+          appendSystemLine(`/ttl           - Cycle Self-Destruct Timer (OFF / 10s / 30s)`);
+          appendSystemLine(`/key [pass]    - Set AES-256 E2EE Room Passphrase`);
+          appendSystemLine(`/theme         - Switch CRT Phosphor Color (Green/Red/Amber/Cyan)`);
+          appendSystemLine(`/stealth       - Boss Key Panic Screen (or press ~ key)`);
+          appendSystemLine(`/name [name]   - Change unique username`);
           appendSystemLine(`/join [code]   - Join frequency code`);
-          appendSystemLine(`/ping          - Test mesh latency`);
-          appendSystemLine(`/status        - Show diagnostics`);
           appendSystemLine(`/burn          - Wipe terminal history`);
           appendSystemLine(`/op            - Open Operator password prompt`);
           if (isOperator) {
-            appendSystemLine(`/broadcast [msg] - Broadcast across all frequencies`, 'warning');
+            appendSystemLine(`/glitch        - Shake & glitch all connected screens`, 'warning');
+            appendSystemLine(`/kick [user]   - Eject user from room`, 'warning');
+            appendSystemLine(`/broadcast [m] - Broadcast across all frequencies`, 'warning');
             appendSystemLine(`/globalburn    - Purge all terminals site-wide`, 'warning');
           }
           break;
@@ -2456,6 +3740,7 @@
           appendSystemLine(`=== MESH DIAGNOSTICS [ROOM: ${roomId.toUpperCase()}] ===`, 'highlight');
           appendSystemLine(`> SAVED IDENTITY: ${myHandle}`);
           appendSystemLine(`> LINKED PEER NODES: ${remotePeers.size}`);
+          appendSystemLine(`> AES-256 ROOM KEY: ${e2eePassphraseSet ? 'LOCKED' : 'OPEN'}`);
           appendSystemLine(`> OPERATOR MODE: ${isOperator ? 'ACTIVE [★]' : 'INACTIVE'}`);
           break;
 
@@ -2498,7 +3783,7 @@
           break;
 
         default:
-          appendSystemLine(`[UNKNOWN COMMAND]: ${cmd}. Type /help for commands.`, 'warning');
+          appendSystemLine(`[UNKNOWN COMMAND]: ${cmd}. Type /help or click '📖 GUIDE & INFO'.`, 'warning');
       }
     }
 
@@ -2637,12 +3922,21 @@
     }
 
     window.addEventListener('keydown', (e) => {
+      if (e.key === '`' || e.key === '~') {
+        if (document.activeElement !== inputEl) {
+          e.preventDefault();
+          toggleStealthMode();
+        }
+      }
       if (e.key === 'Escape') {
         closeShareModal();
         closeJoinModal();
         closeImageModal();
         closeOpAuthModal();
         closeBroadcastModal();
+        closeInfoGuideModal();
+        closeRiddleModal();
+        closeE2eeModal();
         if (savedCustomUsername) closeUsernameModal();
       }
     });
@@ -2661,8 +3955,9 @@
       setRoomFrequency(initialRoom, true);
 
       const bootLines = [
-        `> INITIALIZING RATAALADA-CHAT SEC_MESH v5.0... [OK]`,
+        `> INITIALIZING RATAALADA-CHAT SEC_MESH v6.0... [OK]`,
         `> ACTIVE FREQUENCY CODE: [ ${roomId.toUpperCase()} ]`,
+        `> NEW USER? CLICK [📖 GUIDE & INFO] AT THE TOP FOR THE FULL TUTORIAL.`,
         savedCustomUsername
           ? `> WELCOME BACK, ${myHandle}.`
           : `> [ ? ] TERMINAL READY. PLEASE LOG IN WITH YOUR CODENAME.`
@@ -2671,7 +3966,7 @@
       bootLines.forEach((line, idx) => {
         setTimeout(() => {
           appendSystemLine(line, idx === bootLines.length - 1 ? 'highlight' : 'dim');
-        }, idx * 120);
+        }, idx * 110);
       });
 
       if (!savedCustomUsername) {
