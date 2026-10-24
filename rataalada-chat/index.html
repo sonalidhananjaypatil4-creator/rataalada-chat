@@ -228,118 +228,161 @@
     </div>
   </div>
 
-  <!-- Top Terminal Header Bar -->
-  <header class="border-b subtle-border bg-[#030d05]/95 px-3 sm:px-5 py-2 flex flex-wrap items-center justify-between gap-2 z-20 shrink-0">
-    <div class="flex items-center space-x-3">
-      <div onclick="openOpAuthModal()" title="Operator Terminal Access" class="cursor-pointer w-8 h-8 rounded border border-[#00ff41] flex items-center justify-center bg-[#00240b] glow-box hover:border-yellow-400 transition">
-        <span class="riddler-q text-2xl font-bold leading-none select-none">?</span>
-      </div>
-      <div>
-        <div class="flex items-center space-x-2">
-          <h1 class="text-sm sm:text-base font-bold tracking-widest uppercase">RATAALADA-CHAT</h1>
-          <span class="text-[10px] px-1.5 py-0.5 rounded bg-[#00290d] border border-[#00ff41]/40 text-[#00ff41]">SEC_MESH_v6.0</span>
-          <span id="riddler-solved-badge" class="hidden text-[10px] px-1.5 py-0.5 rounded bg-yellow-950/80 border border-yellow-400 text-yellow-300 font-bold">🦇 GCPD_VERIFIED</span>
+  <!-- STREAMLINED SINGLE TOP HEADER BAR (Decluttered v6.1 UI) -->
+  <header class="border-b subtle-border bg-[#030d05]/95 px-3 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-2.5 z-20 shrink-0">
+    <!-- Left Side: Branding + Frequency Code + Join/Invite -->
+    <div class="flex items-center flex-wrap gap-2 sm:gap-3">
+      <div class="flex items-center space-x-2.5">
+        <div onclick="openOpAuthModal()" title="Operator Terminal Access" class="cursor-pointer w-8 h-8 rounded border border-[#00ff41] flex items-center justify-center bg-[#00240b] glow-box hover:border-yellow-400 transition shrink-0">
+          <span class="riddler-q text-2xl font-bold leading-none select-none">?</span>
         </div>
-        <p class="text-[11px] text-emerald-500/80 tracking-wider hidden sm:block">HARDENED P2P ENCRYPTED TERMINAL</p>
+        <div>
+          <div class="flex items-center space-x-1.5">
+            <h1 class="text-sm sm:text-base font-bold tracking-widest uppercase">RATAALADA-CHAT</h1>
+            <span id="riddler-solved-badge" class="hidden text-[10px] px-1.5 py-0.5 rounded bg-yellow-950/80 border border-yellow-400 text-yellow-300 font-bold">🦇 VERIFIED</span>
+          </div>
+          <p class="text-[10px] text-emerald-500/80 tracking-wider hidden md:block">P2P ENCRYPTED TERMINAL</p>
+        </div>
+      </div>
+
+      <div class="h-5 w-[1px] bg-emerald-900/80 hidden sm:block"></div>
+
+      <!-- Frequency Pill + Join + Invite -->
+      <div class="flex items-center space-x-1.5">
+        <button onclick="copyFreqCode()" title="Click to Copy 6-Digit Frequency Code" class="flex items-center space-x-1.5 bg-[#00200b] hover:bg-[#003614] px-2.5 py-1 rounded border border-[#00ff41]/50 transition group">
+          <span class="text-[11px] text-emerald-400 font-bold">FREQ:</span>
+          <code id="room-display-id" class="text-[#00ff41] font-bold tracking-widest text-xs sm:text-sm">------</code>
+          <span class="text-[10px] text-emerald-400/70 group-hover:text-[#00ff41]">📋</span>
+        </button>
+
+        <button onclick="openJoinModal()" title="Enter a Friend's 6-Digit Frequency Code" class="text-xs px-2.5 py-1 rounded border subtle-border bg-[#001a07] hover:bg-[#00ff41] hover:text-black font-bold transition">
+          JOIN
+        </button>
+
+        <button onclick="openShareModal()" title="Share Link or QR Code" class="text-xs px-2.5 py-1 rounded border border-[#00ff41] bg-[#003812] hover:bg-[#00ff41] hover:text-black font-bold tracking-wider transition glow-box">
+          + INVITE
+        </button>
       </div>
     </div>
 
-    <!-- Live Connection Status & Main Controls -->
+    <!-- Right Side: Essential Status, Identity, Guide & Toolkit Menu -->
     <div class="flex items-center flex-wrap gap-1.5 sm:gap-2">
-      <!-- Info & Tutorial Guide Button -->
-      <button onclick="openInfoGuideModal()" title="Site Information & Complete New User Tutorial" class="text-xs px-2.5 py-1 rounded border border-[#00ff41] bg-[#003812] hover:bg-[#00ff41] hover:text-black font-bold tracking-wider transition glow-box">
-        📖 GUIDE &amp; INFO
-      </button>
-
-      <!-- Live Connected Users Drawer Trigger (#7) -->
-      <div id="conn-badge" onclick="toggleNodesDrawer()" title="Click to view connected users in this room" class="cursor-pointer flex items-center space-x-2 px-2.5 py-1 rounded border border-amber-500/50 bg-amber-950/30 text-amber-400 text-xs hover:bg-[#002b0f] transition">
+      <!-- Live Connected Users Drawer Trigger -->
+      <button id="conn-badge" onclick="toggleNodesDrawer()" title="Click to view connected users in this room" class="cursor-pointer flex items-center space-x-1.5 px-2.5 py-1 rounded border border-amber-500/50 bg-amber-950/30 text-amber-400 text-xs hover:bg-[#002b0f] transition">
         <span id="conn-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-        <span id="conn-text">INITIALIZING MESH...</span>
-      </div>
-
-      <!-- Riddler Minigame Button (#4) -->
-      <button onclick="openRiddleModal()" title="Play Interactive Riddler ARG Challenge" class="text-xs px-2.5 py-1 rounded border subtle-border bg-[#001a07] hover:bg-[#00ff41] hover:text-black font-bold transition">
-        ? RIDDLE
+        <span id="conn-text" class="font-bold">SCANNING...</span>
       </button>
 
-      <!-- CRT Phosphor Color Switcher (#6) -->
-      <button onclick="cycleCrtTheme()" title="Switch CRT Monitor Phosphor Color" class="text-xs px-2 py-1 rounded border subtle-border bg-[#001a07] hover:bg-[#003311] transition">
-        CRT: <span id="crt-theme-label" class="font-bold">GREEN</span>
-      </button>
-
-      <!-- Boss Key / Stealth Mode (#2) -->
-      <button onclick="toggleStealthMode()" title="Boss Key Panic Disguise (Or press ~ key)" class="text-xs px-2 py-1 rounded border subtle-border bg-[#001a07] hover:bg-[#003311] transition">
-        STEALTH
-      </button>
-
-      <button id="audio-btn" onclick="toggleAudio()" title="Toggle CRT & Mechanical Key Sounds" class="text-xs px-2 py-1 rounded border subtle-border bg-[#001a07] hover:bg-[#003311] transition">
-        <span id="audio-label">SFX: ON</span>
-      </button>
-
-      <button onclick="openShareModal()" class="text-xs px-2.5 py-1 rounded border border-[#00ff41] bg-[#003812] hover:bg-[#00ff41] hover:text-black font-bold tracking-wider transition glow-box">
-        + INVITE
-      </button>
-    </div>
-  </header>
-
-  <!-- Subheader: Room Frequency & Security/Privacy Controls -->
-  <div class="px-3 sm:px-5 py-1.5 border-b subtle-border bg-[#010903]/90 flex flex-wrap items-center justify-between text-xs gap-2 z-20 shrink-0">
-    <div class="flex items-center flex-wrap gap-1.5 sm:gap-2">
-      <span class="text-emerald-500 font-bold tracking-wider">FREQ:</span>
-      <code id="room-display-id" class="text-[#00ff41] font-bold bg-[#00220c] px-2 py-0.5 rounded border border-[#00ff41]/50 tracking-widest text-sm">------</code>
-
-      <button onclick="copyFreqCode()" class="text-[11px] border subtle-border px-2 py-0.5 rounded hover:bg-[#003816] text-[#00ff41] transition">
-        COPY CODE
-      </button>
-
-      <button onclick="openJoinModal()" class="text-[11px] border border-emerald-400/70 bg-[#002b0f] px-2 py-0.5 rounded hover:bg-[#00ff41] hover:text-black font-semibold transition">
-        JOIN CODE
-      </button>
-
-      <!-- E2EE Room Passphrase Lock (#3) -->
-      <button id="e2ee-btn" onclick="openE2eeModal()" title="Set optional AES-256 Room Passphrase Lock" class="text-[11px] border subtle-border px-2 py-0.5 rounded bg-[#001806] hover:bg-[#003010] transition">
-        🔐 E2EE KEY: <span id="e2ee-state" class="font-bold">OPEN</span>
-      </button>
-    </div>
-
-    <div class="flex items-center flex-wrap gap-1.5 sm:gap-2">
-      <button onclick="openUsernameModal(false)" title="Click to change your saved username anytime" class="text-[11px] border border-[#00ff41]/70 px-2 py-0.5 rounded bg-[#00220c] hover:bg-[#00ff41] hover:text-black transition flex items-center space-x-1">
-        <span>ID:</span>
+      <!-- User Identity Pill -->
+      <button onclick="openUsernameModal(false)" title="Click to change your unique username anytime" class="text-xs border border-[#00ff41]/70 px-2.5 py-1 rounded bg-[#00220c] hover:bg-[#00ff41] hover:text-black transition flex items-center space-x-1">
+        <span class="opacity-80">ID:</span>
         <span id="handle-display" class="font-bold underline">[ANON_01]</span>
         <span class="text-[10px] opacity-80">✎</span>
       </button>
 
-      <button onclick="openOpAuthModal()" title="Owner Authentication (Masked Input)" class="text-[11px] border border-yellow-600/50 text-yellow-400 px-2 py-0.5 rounded bg-yellow-950/20 hover:bg-yellow-500 hover:text-black font-bold transition">
-        ★ OP
+      <!-- Info & Tutorial Guide Button -->
+      <button onclick="openInfoGuideModal()" title="Site Information & Complete New User Tutorial" class="text-xs px-2.5 py-1 rounded border subtle-border bg-[#001a07] hover:bg-[#00ff41] hover:text-black font-bold tracking-wider transition">
+        📖 GUIDE
       </button>
 
-      <!-- Self-Destructing Messages Timer (#1) -->
-      <button id="ttl-toggle-btn" onclick="cycleTtlMode()" title="Self-Destructing Burn-After-Reading Timer" class="text-[11px] border subtle-border px-2 py-0.5 rounded bg-[#001806] hover:bg-[#003010] transition">
-        ⏱️ TTL: <span id="ttl-state" class="font-bold">OFF</span>
-      </button>
-
-      <!-- Bat-Vocoder Voice FX (#5) -->
-      <button onclick="cycleVoiceFx()" title="Voice Changer Filter for Voice Notes" class="text-[11px] border subtle-border px-2 py-0.5 rounded bg-[#001806] hover:bg-[#003010] transition">
-        🎙️ FX: <span id="voice-fx-label" class="font-bold">NORMAL</span>
-      </button>
-
-      <button id="cipher-toggle-btn" onclick="toggleCipherMode()" title="Encrypt outgoing messages into geometric cipher glyphs" class="text-[11px] border subtle-border px-2 py-0.5 rounded bg-[#001806] hover:bg-[#003010] transition">
-        CIPHER: <span id="cipher-state">OFF</span>
-      </button>
-
-      <button onclick="burnSession()" title="Wipe terminal history on your screen (or all screens if Operator)" class="text-[11px] border border-red-600/60 text-red-400 px-2 py-0.5 rounded bg-red-950/30 hover:bg-red-600 hover:text-black font-bold transition">
-        BURN
+      <!-- All-In-One Toolkit Drawer Button -->
+      <button id="toolkit-btn" onclick="toggleToolkitDrawer()" title="Open Spy & ARG Toolkit (Encryption, Self-Destruct, Voice FX, Riddles, CRT Themes)" class="text-xs px-3 py-1 rounded border border-[#00ff41] bg-[#002b0f] hover:bg-[#00ff41] hover:text-black font-bold tracking-wider transition glow-box flex items-center space-x-1">
+        <span>⚙️ TOOLKIT</span>
+        <span id="toolkit-active-dot" class="hidden w-1.5 h-1.5 rounded-full bg-yellow-400 animate-ping"></span>
+        <span class="text-[10px]">▾</span>
       </button>
     </div>
-  </div>
+  </header>
 
-  <!-- Main Workspace Wrapper (Terminal Output + Slide-Out Nodes Drawer) -->
+  <!-- Main Workspace Wrapper (Terminal Output + Slide-Out Drawers) -->
   <div class="flex-1 flex overflow-hidden relative">
     <!-- Main Terminal Log Area -->
     <main id="terminal-output" class="flex-1 overflow-y-auto p-3 sm:p-6 space-y-2.5 text-sm sm:text-base z-10 leading-relaxed" onclick="focusInput()">
     </main>
 
-    <!-- Live Connected Users Sidebar Drawer (#7) -->
+    <!-- Slide-Out Drawer 1: ⚙️ SPY & ARG TOOLKIT MENU -->
+    <aside id="toolkit-drawer" class="hidden w-72 sm:w-80 border-l subtle-border bg-[#020c04]/95 p-4 flex flex-col justify-between z-30 shrink-0 glow-box overflow-y-auto">
+      <div class="space-y-4">
+        <div class="flex items-center justify-between border-b subtle-border pb-2.5">
+          <span class="text-xs font-bold tracking-widest uppercase text-[#00ff41]">⚙️ TERMINAL TOOLKIT</span>
+          <button onclick="toggleToolkitDrawer()" class="text-xs px-2 py-0.5 border subtle-border rounded hover:bg-[#00ff41] hover:text-black">✕</button>
+        </div>
+
+        <!-- Group 1: Privacy & Encryption -->
+        <div class="space-y-2">
+          <span class="text-[10px] font-bold tracking-widest text-emerald-500 uppercase block">🕵️ PRIVACY &amp; ENCRYPTION</span>
+
+          <button id="e2ee-btn" onclick="openE2eeModal()" class="w-full flex items-center justify-between px-3 py-2 rounded border subtle-border bg-[#001806] hover:bg-[#003010] text-xs transition">
+            <span>🔐 AES-256 Room Key</span>
+            <span id="e2ee-state" class="font-bold text-[#00ff41]">OPEN</span>
+          </button>
+
+          <button id="ttl-toggle-btn" onclick="cycleTtlMode()" class="w-full flex items-center justify-between px-3 py-2 rounded border subtle-border bg-[#001806] hover:bg-[#003010] text-xs transition">
+            <span>⏱️ Self-Destruct (TTL)</span>
+            <span id="ttl-state" class="font-bold text-[#00ff41]">OFF</span>
+          </button>
+
+          <button id="cipher-toggle-btn" onclick="toggleCipherMode()" class="w-full flex items-center justify-between px-3 py-2 rounded border subtle-border bg-[#001806] hover:bg-[#003010] text-xs transition">
+            <span>🔣 Glyph Cipher Mode</span>
+            <span id="cipher-state" class="font-bold text-[#00ff41]">OFF</span>
+          </button>
+
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <button onclick="toggleStealthMode()" class="px-2.5 py-2 rounded border subtle-border bg-[#001a07] hover:bg-[#00ff41] hover:text-black text-xs font-bold transition text-center">
+              🕵️ STEALTH (~)
+            </button>
+            <button onclick="burnSession()" class="px-2.5 py-2 rounded border border-red-600/60 bg-red-950/30 text-red-400 hover:bg-red-600 hover:text-black text-xs font-bold transition text-center">
+              🔥 BURN CHAT
+            </button>
+          </div>
+        </div>
+
+        <!-- Group 2: ARG, Audio & Visuals -->
+        <div class="space-y-2 pt-2 border-t subtle-border">
+          <span class="text-[10px] font-bold tracking-widest text-emerald-500 uppercase block">🎮 ARG &amp; AUDIO / VISUAL</span>
+
+          <button onclick="openRiddleModal()" class="w-full flex items-center justify-between px-3 py-2 rounded border border-[#00ff41]/70 bg-[#00290d] hover:bg-[#00ff41] hover:text-black text-xs font-bold transition glow-box">
+            <span>❓ Riddler ARG Challenge</span>
+            <span>PLAY ▸</span>
+          </button>
+
+          <button onclick="toggleRiddlerBot()" class="w-full flex items-center justify-between px-3 py-2 rounded border subtle-border bg-[#001806] hover:bg-[#003010] text-xs transition">
+            <span>🤖 Riddler AI Responder</span>
+            <span id="toolkit-bot-label" class="font-bold text-[#00ff41]">AUTO</span>
+          </button>
+
+          <button onclick="cycleVoiceFx()" class="w-full flex items-center justify-between px-3 py-2 rounded border subtle-border bg-[#001806] hover:bg-[#003010] text-xs transition">
+            <span>🎙️ Voice Changer FX</span>
+            <span id="voice-fx-label" class="font-bold text-[#00ff41]">NORMAL</span>
+          </button>
+
+          <button onclick="cycleCrtTheme()" class="w-full flex items-center justify-between px-3 py-2 rounded border subtle-border bg-[#001806] hover:bg-[#003010] text-xs transition">
+            <span>🖥️ CRT Monitor Theme</span>
+            <span id="crt-theme-label" class="font-bold text-[#00ff41]">GREEN</span>
+          </button>
+
+          <button id="audio-btn" onclick="toggleAudio()" class="w-full flex items-center justify-between px-3 py-2 rounded border subtle-border bg-[#001806] hover:bg-[#003010] text-xs transition">
+            <span>🔊 Terminal Sound FX</span>
+            <span id="audio-label" class="font-bold text-[#00ff41]">SFX: ON</span>
+          </button>
+        </div>
+
+        <!-- Group 3: Operator Access -->
+        <div class="space-y-2 pt-2 border-t subtle-border">
+          <span class="text-[10px] font-bold tracking-widest text-yellow-500/80 uppercase block">👑 SYSTEM ADMINISTRATION</span>
+          <button onclick="openOpAuthModal()" class="w-full flex items-center justify-between px-3 py-2 rounded border border-yellow-600/50 bg-yellow-950/20 text-yellow-400 hover:bg-yellow-500 hover:text-black text-xs font-bold transition">
+            <span>★ Operator Login</span>
+            <span>[★ BATMAN]</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="border-t subtle-border pt-3 mt-4 text-[11px] text-emerald-500/70 text-center">
+        RATAALADA-CHAT // SEC_MESH v6.1
+      </div>
+    </aside>
+
+    <!-- Slide-Out Drawer 2: Live Connected Users Sidebar (#7) -->
     <aside id="nodes-drawer" class="hidden w-72 sm:w-80 border-l subtle-border bg-[#020c04]/95 p-4 flex flex-col justify-between z-30 shrink-0 glow-box">
       <div>
         <div class="flex items-center justify-between border-b subtle-border pb-2.5 mb-3">
@@ -396,8 +439,8 @@
     </div>
   </div>
 
-  <!-- Command & Chat Input Footer -->
-  <footer class="border-t subtle-border bg-[#020b04] p-2 sm:p-3.5 z-20 shrink-0">
+  <!-- Command & Chat Input Footer (With Combined [+ ATTACH] Menu - Option 2) -->
+  <footer class="border-t subtle-border bg-[#020b04] p-2 sm:p-3.5 z-20 shrink-0 relative">
     <input
       id="image-input"
       type="file"
@@ -412,6 +455,18 @@
       onchange="handleFileDropSelect(event)"
     />
 
+    <!-- Popup Menu for [+ ATTACH] -->
+    <div id="attach-menu" class="hidden absolute bottom-16 right-28 sm:right-40 bg-[#020c04] border-2 border-[#00ff41] rounded-lg p-2 space-y-1.5 z-40 glow-box w-48 text-xs">
+      <button type="button" onclick="closeAttachMenu(); triggerImageSelect();" class="w-full flex items-center justify-between px-3 py-2 rounded bg-[#001a07] hover:bg-[#00ff41] hover:text-black font-bold transition">
+        <span>🖼️ SEND PICTURE</span>
+        <span class="text-[10px] opacity-75">[PIC]</span>
+      </button>
+      <button type="button" onclick="closeAttachMenu(); triggerFileSelect();" class="w-full flex items-center justify-between px-3 py-2 rounded bg-[#001a07] hover:bg-[#00ff41] hover:text-black font-bold transition">
+        <span>📁 SEND FILE</span>
+        <span class="text-[10px] opacity-75">[1.5MB]</span>
+      </button>
+    </div>
+
     <form id="chat-form" onsubmit="handleFormSubmit(event)" class="flex items-center space-x-1.5 sm:space-x-2 max-w-6xl mx-auto">
       <span id="prompt-prefix" class="text-[#00ff41] font-bold text-sm sm:text-base shrink-0 select-none">[&gt;]</span>
       <div class="relative flex-1 flex items-center">
@@ -420,28 +475,20 @@
           type="text"
           autocomplete="off"
           spellcheck="false"
-          placeholder="Type message, /help, /riddle, /ttl, or send [PIC] / [FILE] / [VOICE]..."
+          placeholder="Type message, /help, /riddle, or use [+ ATTACH] & [🎙️ VOICE]..."
           class="w-full bg-transparent text-[#00ff41] focus:outline-none font-mono text-sm sm:text-base pr-2"
         />
       </div>
 
+      <!-- Combined [+ ATTACH] Button (Option 2) -->
       <button
+        id="attach-btn"
         type="button"
-        onclick="triggerImageSelect()"
-        title="Send a Picture (or paste image from clipboard)"
-        class="px-2 sm:px-2.5 py-1.5 rounded border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-xs tracking-wider transition shrink-0"
+        onclick="toggleAttachMenu(event)"
+        title="Attach Picture or Encrypted File Packet"
+        class="px-2.5 sm:px-3 py-1.5 rounded border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-xs tracking-wider transition shrink-0"
       >
-        [PIC]
-      </button>
-
-      <!-- Encrypted File Drop (#8) -->
-      <button
-        type="button"
-        onclick="triggerFileSelect()"
-        title="Send Encrypted File Packet (PDF, ZIP, TXT, Audio, Docs up to 1.5MB)"
-        class="px-2 sm:px-2.5 py-1.5 rounded border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-xs tracking-wider transition shrink-0"
-      >
-        [FILE]
+        [+ ATTACH]
       </button>
 
       <button
@@ -449,9 +496,9 @@
         type="button"
         onclick="toggleVoiceRecording()"
         title="Record & Send a Voice Note (Uses active Voice FX)"
-        class="px-2 sm:px-2.5 py-1.5 rounded border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-xs tracking-wider transition shrink-0"
+        class="px-2.5 sm:px-3 py-1.5 rounded border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-xs tracking-wider transition shrink-0"
       >
-        [VOICE]
+        [🎙️ VOICE]
       </button>
 
       <button
@@ -518,8 +565,8 @@
               <h4 class="text-[#00ff41] font-bold mb-1">STEP 2: CONNECT WITH A FRIEND OR SECOND DEVICE (6-DIGIT FREQUENCY CODE)</h4>
               <p class="text-xs">
                 Every chat room has a <b>6-Digit Frequency Code</b> shown at the top-left (e.g., <code>FREQ: 7X9K2M</code>). You have 3 easy ways to connect:<br/>
-                • <b>Option A (Enter Code):</b> Give your 6-digit code to your friend. They click <b><code>JOIN CODE</code></b> at the top-left and type your 6-digit code.<br/>
-                • <b>Option B (Auto-Join Link):</b> Click <b><code>+ INVITE</code></b> in the top-right, copy the direct URL, and send it to your friend on WhatsApp/Discord.<br/>
+                • <b>Option A (Enter Code):</b> Click your <code>FREQ</code> badge to copy your 6-digit code and give it to your friend. They click <b><code>JOIN</code></b> at the top-left and type your code.<br/>
+                • <b>Option B (Auto-Join Link):</b> Click <b><code>+ INVITE</code></b> in the top bar, copy the direct URL, and send it to your friend on WhatsApp/Discord.<br/>
                 • <b>Option C (Phone QR Scan):</b> Click <b><code>+ INVITE</code></b> and scan the green QR code with your phone camera to link instantly.
               </p>
             </div>
@@ -528,17 +575,16 @@
               <h4 class="text-[#00ff41] font-bold mb-1">STEP 3: SEND TEXT, PHOTOS, FILES &amp; VOICE NOTES</h4>
               <p class="text-xs">
                 • <b>Text Chat:</b> Type in the bottom bar and press <code>Enter</code> or click <b><code>SEND [⏎]</code></b>.<br/>
-                • <b>Send Pictures (<code>[PIC]</code>):</b> Click <b><code>[PIC]</code></b> (or press <code>Ctrl + V</code> to paste an image from your clipboard). Click any received photo to view it full-screen or save it.<br/>
-                • <b>Send Files (<code>[FILE]</code>):</b> Click <b><code>[FILE]</code></b> (or drag &amp; drop a file onto the screen) to send PDFs, ZIPs, text files, or audio directly peer-to-peer.<br/>
-                • <b>Send Voice Notes (<code>[VOICE]</code>):</b> Click <b><code>[VOICE]</code></b> to record up to 40 seconds of audio. Try toggling <b><code>🎙️ FX: VENGEANCE</code></b> first to deepen your voice like Batman!
+                • <b>Attach Pictures &amp; Files (<code>[+ ATTACH]</code>):</b> Click <b><code>[+ ATTACH]</code></b> at the bottom to send a Picture or an Encrypted File Packet (or press <code>Ctrl + V</code> / drag-and-drop any file onto the screen).<br/>
+                • <b>Send Voice Notes (<code>[🎙️ VOICE]</code>):</b> Click <b><code>[🎙️ VOICE]</code></b> to record up to 40 seconds of audio. Open <b><code>⚙️ TOOLKIT</code></b> to switch <b><code>🎙️ Voice Changer FX</code></b> to <code>VENGEANCE</code> to deepen your voice like Batman!
               </p>
             </div>
 
             <div class="p-3 rounded border subtle-border bg-black/60">
-              <h4 class="text-[#00ff41] font-bold mb-1">STEP 4: REPLY, REACT &amp; USE SELF-DESTRUCTING MESSAGES</h4>
+              <h4 class="text-[#00ff41] font-bold mb-1">STEP 4: USE THE [⚙️ TOOLKIT] MENU, REPLIES &amp; REACTIONS</h4>
               <p class="text-xs">
-                • <b>Reply &amp; React:</b> On any message in the chat log, click <b><code>[↩ REPLY]</code></b> to quote that message, or click any reaction badge (<code>[!]</code>, <code>[?]</code>, <code>[🦇]</code>, <code>[💀]</code>) to add a live counter!<br/>
-                • <b>Burn-After-Reading (<code>⏱️ TTL</code>):</b> Click <b><code>⏱️ TTL: OFF</code></b> in the subheader to switch between <code>10s</code> or <code>30s</code>. Every message sent with TTL active will count down and self-destruct from both screens automatically.
+                • <b>Spy &amp; ARG Toolkit (<code>⚙️ TOOLKIT</code>):</b> Click <b><code>⚙️ TOOLKIT</code></b> in the top-right to access <b>AES-256 Room Encryption</b>, <b>Self-Destructing Timers (10s/30s)</b>, <b>Riddler ARG Challenge</b>, <b>CRT Monitor Colors</b>, and <b>Stealth Mode</b>.<br/>
+                • <b>Reply &amp; React:</b> On any message in the chat log, click <b><code>[↩ REPLY]</code></b> to quote that message, or click any reaction badge (<code>[!]</code>, <code>[?]</code>, <code>[🦇]</code>, <code>[💀]</code>) to add a live counter!
               </p>
             </div>
 
@@ -563,35 +609,35 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="p-3 rounded border subtle-border bg-black/60">
               <h4 class="text-[#00ff41] font-bold">1. ⏱️ Self-Destructing Messages (TTL)</h4>
-              <p class="text-xs mt-1">Toggle <code>⏱️ TTL: 10s / 30s</code>. Messages display a live countdown timer and dissolve into static on all devices when time expires.</p>
+              <p class="text-xs mt-1">Open <code>⚙️ TOOLKIT</code> and toggle <code>⏱️ Self-Destruct (10s / 30s)</code>. Messages display a live countdown timer and dissolve into static on all devices when time expires.</p>
             </div>
             <div class="p-3 rounded border subtle-border bg-black/60">
               <h4 class="text-[#00ff41] font-bold">2. 🕵️ Boss Key / Panic Stealth Mode</h4>
-              <p class="text-xs mt-1">Press the <code>~</code> (Backquote) key or click <code>STEALTH</code> at the top-right to instantly disguise the chat as a Linux Kernel Compiler terminal.</p>
+              <p class="text-xs mt-1">Press the <code>~</code> (Backquote) key or click <code>🕵️ STEALTH</code> inside <code>⚙️ TOOLKIT</code> to instantly disguise the chat as a Linux Kernel Compiler terminal.</p>
             </div>
             <div class="p-3 rounded border subtle-border bg-black/60">
               <h4 class="text-[#00ff41] font-bold">3. 🔐 AES-256 Room Passphrase Lock</h4>
-              <p class="text-xs mt-1">Click <code>🔐 E2EE KEY</code> to set a secret room password. Uses Web Crypto API (PBKDF2 + AES-GCM) so nobody without the key can read messages.</p>
+              <p class="text-xs mt-1">Click <code>🔐 AES-256 Room Key</code> inside <code>⚙️ TOOLKIT</code> to set a secret room password. Uses Web Crypto API (PBKDF2 + AES-GCM) so nobody without the key can read messages.</p>
             </div>
             <div class="p-3 rounded border subtle-border bg-black/60">
               <h4 class="text-[#00ff41] font-bold">4. ❓ Interactive Riddler ARG Minigame</h4>
-              <p class="text-xs mt-1">Click <code>? RIDDLE</code> or type <code>/riddle</code> to solve 3 canonical riddles from <i>The Batman</i> and unlock the <code>[🦇 GCPD_VERIFIED]</code> badge.</p>
+              <p class="text-xs mt-1">Click <code>❓ Riddler ARG Challenge</code> in <code>⚙️ TOOLKIT</code> or type <code>/riddle</code> to solve 3 canonical riddles from <i>The Batman</i> and unlock the <code>[🦇 GCPD_VERIFIED]</code> badge.</p>
             </div>
             <div class="p-3 rounded border subtle-border bg-black/60">
               <h4 class="text-[#00ff41] font-bold">5. 🎙️ Bat-Vocoder Voice Changer FX</h4>
-              <p class="text-xs mt-1">Click <code>🎙️ FX</code> to cycle between <code>NORMAL</code>, <code>VENGEANCE</code> (deep Batman pitch modulator), and <code>ROGUE</code> (anonymous pitch).</p>
+              <p class="text-xs mt-1">In <code>⚙️ TOOLKIT</code>, cycle <code>🎙️ Voice Changer FX</code> between <code>NORMAL</code>, <code>VENGEANCE</code> (deep Batman pitch modulator), and <code>ROGUE</code> (anonymous pitch).</p>
             </div>
             <div class="p-3 rounded border subtle-border bg-black/60">
               <h4 class="text-[#00ff41] font-bold">6. 🖥️ CRT Phosphor Theme Switcher</h4>
-              <p class="text-xs mt-1">Click <code>CRT: GREEN</code> to switch between Classic Riddler Green, The Batman Crimson Red, Batcomputer Tactical Amber, and Wayne Cyan.</p>
+              <p class="text-xs mt-1">In <code>⚙️ TOOLKIT</code>, switch <code>🖥️ CRT Monitor Theme</code> between Classic Riddler Green, The Batman Crimson Red, Batcomputer Tactical Amber, and Wayne Cyan.</p>
             </div>
             <div class="p-3 rounded border subtle-border bg-black/60">
               <h4 class="text-[#00ff41] font-bold">7. 👥 Live Connected Nodes Drawer</h4>
-              <p class="text-xs mt-1">Click the <code>MESH SECURE (X NODES)</code> badge to see everyone in your room. The Owner (<code>[★ BATMAN]</code>) gets one-click KICK and MUTE buttons.</p>
+              <p class="text-xs mt-1">Click the <code>🟢 X ONLINE</code> badge in the top bar to see everyone in your room. The Owner (<code>[★ BATMAN]</code>) gets one-click KICK and MUTE buttons.</p>
             </div>
             <div class="p-3 rounded border subtle-border bg-black/60">
-              <h4 class="text-[#00ff41] font-bold">8. 📁 Encrypted P2P File Drop</h4>
-              <p class="text-xs mt-1">Click <code>[FILE]</code> or drag-and-drop any file onto the terminal to transmit documents, archives, or audio directly to peers.</p>
+              <h4 class="text-[#00ff41] font-bold">8. 📁 Combined [+ ATTACH] Media &amp; File Drop</h4>
+              <p class="text-xs mt-1">Click <code>[+ ATTACH]</code> at the bottom or drag-and-drop any photo/file onto the terminal to transmit images, documents, or archives directly to peers.</p>
             </div>
             <div class="p-3 rounded border subtle-border bg-black/60">
               <h4 class="text-[#00ff41] font-bold">9. ↩ Direct Replies &amp; ASCII Reactions</h4>
@@ -616,7 +662,7 @@
           <div class="p-3.5 rounded border subtle-border bg-black/60 space-y-2">
             <h4 class="text-[#00ff41] font-bold text-sm">🔒 A+ ENTERPRISE SECURITY HEADERS &amp; AES-256-GCM</h4>
             <p class="text-xs">
-              • <b>Web Crypto API (AES-256-GCM):</b> When you set a Room Passphrase via <code>🔐 E2EE KEY</code>, your passphrase derives a 256-bit cryptographic key using 100,000 iterations of PBKDF2-SHA256 right inside your browser. Payloads are encrypted with a random 96-bit IV before leaving your device.<br/>
+              • <b>Web Crypto API (AES-256-GCM):</b> When you set a Room Passphrase via <code>🔐 AES-256 Room Key</code>, your passphrase derives a 256-bit cryptographic key using 100,000 iterations of PBKDF2-SHA256 right inside your browser. Payloads are encrypted with a random 96-bit IV before leaving your device.<br/>
               • <b>Hardened HTTP Headers:</b> Protected by Strict-Transport-Security (HSTS), X-Frame-Options (SAMEORIGIN), X-Content-Type-Options (nosniff), Referrer-Policy, Permissions-Policy, and Content-Security-Policy.
             </p>
           </div>
@@ -633,7 +679,7 @@
 
       <!-- Footer -->
       <div class="border-t subtle-border pt-3 mt-4 flex items-center justify-between text-xs shrink-0">
-        <span class="text-emerald-500/80">TIP: You can reopen this guide anytime by clicking <b>📖 GUIDE &amp; INFO</b> at the top.</span>
+        <span class="text-emerald-500/80">TIP: You can reopen this guide anytime by clicking <b>📖 GUIDE</b> at the top.</span>
         <button onclick="closeInfoGuideModal()" class="px-4 py-1.5 rounded border border-[#00ff41] bg-[#00ff41] text-black font-bold tracking-wider hover:bg-emerald-300 transition">
           ENTER TERMINAL [⏎]
         </button>
@@ -929,7 +975,7 @@
       <div class="space-y-4 text-xs sm:text-sm">
         <div class="p-3 rounded bg-[#001c08] border subtle-border">
           <p class="text-emerald-400 font-bold mb-1">METHOD 1: 6-DIGIT FREQUENCY CODE</p>
-          <p class="text-emerald-200/80 text-xs mb-2">Open your site on the other device, click <b>JOIN CODE</b>, and enter:</p>
+          <p class="text-emerald-200/80 text-xs mb-2">Open your site on the other device, click <b>JOIN</b>, and enter:</p>
           <div class="flex items-center justify-between bg-black border border-[#00ff41] px-3 py-2 rounded">
             <span id="modal-freq-code" class="text-xl font-bold tracking-[0.25em] text-[#00ff41]">------</span>
             <button onclick="copyFreqCode()" class="px-2.5 py-1 bg-[#003b14] hover:bg-[#00ff41] hover:text-black text-xs font-bold rounded transition">
@@ -1072,7 +1118,7 @@
     let isRoomLocked = false;
     let mutedUsers = new Set();
 
-    // New v6.0 Feature States
+    // v6.1 Feature States
     let ttlSeconds = 0; // 0 = OFF, 10 = 10s, 30 = 30s
     let voiceFxMode = 'NORMAL'; // NORMAL, VENGEANCE, ROGUE
     let crtThemes = ['GREEN', 'RED', 'AMBER', 'CYAN'];
@@ -1147,14 +1193,63 @@
     );
 
     const RIDDLER_RESPONSES = [
-      "<?> SOLO TERMINAL MODE: NO SECOND DEVICE DETECTED ON THIS FREQUENCY YET. CLICK '+ INVITE' OR 'JOIN CODE' TO LINK TWO DEVICES.",
-      "<?> IF YOU ARE JUSTICE, PLEASE DO NOT LIE. TRY CLICKING '? RIDDLE' OR '📖 GUIDE & INFO' AT THE TOP BAR.",
-      "<?> ENCRYPTED TUNNEL READY. ONCE YOUR SECOND DEVICE JOINS THIS FREQUENCY CODE, MY AUTO-RESPONDER STEPS ASIDE AUTOMATICALLY."
+      "<?> SOLO TERMINAL MODE: NO SECOND DEVICE DETECTED ON THIS FREQUENCY YET. CLICK '+ INVITE' OR 'JOIN' TO LINK TWO DEVICES.",
+      "<?> IF YOU ARE JUSTICE, PLEASE DO NOT LIE. TRY CLICKING '⚙️ TOOLKIT' OR '📖 GUIDE' AT THE TOP BAR.",
+      "<?> ENCRYPTED TUNNEL READY. ONCE YOUR SECOND DEVICE JOINS THIS FREQUENCY CODE, MY AUTO-RESPONDER STEPS ASIDE AUTOMATICALLY.",
+      "<?> HELLO, SEEKER. TYPE '/riddle' OR OPEN '⚙️ TOOLKIT' TO TEST YOUR INTELLECT AGAINST MY GOTHAM PUZZLES.",
+      "<?> NEED TO TALK TO SOMEONE REAL? COPY YOUR 6-DIGIT 'FREQ' CODE AT THE TOP-LEFT AND SEND IT TO A FRIEND."
     ];
     let riddlerIdx = 0;
 
     const outputEl = document.getElementById('terminal-output');
     const inputEl = document.getElementById('terminal-input');
+
+    // ==========================================
+    // NEW v6.1 UI DRAWERS: [⚙️ TOOLKIT] & [+ ATTACH]
+    // ==========================================
+    function toggleToolkitDrawer() {
+      initAudio();
+      playBeep(780, 0.04);
+      const toolkitDrawer = document.getElementById('toolkit-drawer');
+      const nodesDrawer = document.getElementById('nodes-drawer');
+      if (!nodesDrawer.classList.contains('hidden')) {
+        nodesDrawer.classList.add('hidden');
+      }
+      toolkitDrawer.classList.toggle('hidden');
+    }
+
+    function updateToolkitIndicatorDot() {
+      const dot = document.getElementById('toolkit-active-dot');
+      if (!dot) return;
+      if (e2eePassphraseSet || ttlSeconds > 0 || cipherMode || voiceFxMode !== 'NORMAL') {
+        dot.classList.remove('hidden');
+      } else {
+        dot.classList.add('hidden');
+      }
+    }
+
+    function toggleAttachMenu(e) {
+      if (e) e.stopPropagation();
+      initAudio();
+      playBeep(740, 0.04);
+      const menu = document.getElementById('attach-menu');
+      menu.classList.toggle('hidden');
+    }
+
+    function closeAttachMenu() {
+      const menu = document.getElementById('attach-menu');
+      if (menu) menu.classList.add('hidden');
+    }
+
+    window.addEventListener('click', (e) => {
+      const menu = document.getElementById('attach-menu');
+      const btn = document.getElementById('attach-btn');
+      if (menu && !menu.classList.contains('hidden')) {
+        if (!menu.contains(e.target) && e.target !== btn) {
+          menu.classList.add('hidden');
+        }
+      }
+    });
 
     // ==========================================
     // SITE INFORMATION & NEW USER TUTORIAL MODAL
@@ -1196,6 +1291,7 @@
       const modes = [0, 10, 30];
       ttlSeconds = modes[(modes.indexOf(ttlSeconds) + 1) % modes.length];
       document.getElementById('ttl-state').textContent = ttlSeconds === 0 ? 'OFF' : `${ttlSeconds}s 🔥`;
+      updateToolkitIndicatorDot();
       playBeep(ttlSeconds > 0 ? 960 : 520, 0.06);
       appendSystemLine(`[SELF-DESTRUCT TIMER]: ${ttlSeconds === 0 ? 'DISABLED' : `ACTIVE (${ttlSeconds} SECONDS BURN-AFTER-READING)`}`, 'dim');
     }
@@ -1296,8 +1392,9 @@
       try {
         e2eeCryptoKey = await deriveAesKey(passphrase);
         e2eePassphraseSet = true;
-        document.getElementById('e2ee-state').textContent = 'LOCKED (AES-256)';
+        document.getElementById('e2ee-state').textContent = 'LOCKED 🔒';
         document.getElementById('e2ee-btn').classList.add('border-[#00ff41]', 'text-[#00ff41]');
+        updateToolkitIndicatorDot();
         playConnectChime();
         appendSystemLine(`[🔐 AES-256-GCM E2EE ACTIVE] Outgoing messages are now encrypted with your Room Passphrase.`, 'highlight');
       } catch (err) {
@@ -1310,6 +1407,7 @@
       e2eePassphraseSet = false;
       document.getElementById('e2ee-pass-input').value = '';
       document.getElementById('e2ee-state').textContent = 'OPEN';
+      updateToolkitIndicatorDot();
       closeE2eeModal();
       appendSystemLine(`[🔓 E2EE PASSPHRASE REMOVED] Reverted to standard frequency channel.`, 'dim');
     }
@@ -1411,6 +1509,7 @@
       voiceFxMode = modes[(modes.indexOf(voiceFxMode) + 1) % modes.length];
       document.getElementById('voice-fx-label').textContent = voiceFxMode;
       document.getElementById('rec-fx-indicator').textContent = voiceFxMode;
+      updateToolkitIndicatorDot();
       playBeep(voiceFxMode === 'VENGEANCE' ? 320 : 820, 0.07, 'sawtooth');
       appendSystemLine(`[VOICE MODULATOR FX]: ${voiceFxMode}`, 'dim');
     }
@@ -1442,6 +1541,10 @@
     function toggleNodesDrawer() {
       playBeep(760, 0.04);
       const drawer = document.getElementById('nodes-drawer');
+      const toolkitDrawer = document.getElementById('toolkit-drawer');
+      if (toolkitDrawer && !toolkitDrawer.classList.contains('hidden')) {
+        toolkitDrawer.classList.add('hidden');
+      }
       drawer.classList.toggle('hidden');
       renderNodesDrawerList();
     }
@@ -2164,9 +2267,12 @@
     function toggleRiddlerBot() {
       const states = ['AUTO', 'ON', 'OFF'];
       botMode = states[(states.indexOf(botMode) + 1) % states.length];
-      document.getElementById('bot-label').textContent = botMode;
+      const nodesLabel = document.getElementById('bot-label');
+      if (nodesLabel) nodesLabel.textContent = botMode;
+      const toolkitLabel = document.getElementById('toolkit-bot-label');
+      if (toolkitLabel) toolkitLabel.textContent = botMode;
       playBeep(760, 0.05);
-      appendSystemLine(`[RIDDLER BOT MODE]: ${botMode}`, 'dim');
+      appendSystemLine(`[🤖 RIDDLER BOT RESPONDER MODE]: ${botMode} (${botMode === 'AUTO' ? 'Replies when solo' : botMode === 'ON' ? 'Always replies' : 'Disabled'})`, 'dim');
     }
 
     // ==========================================
@@ -2246,7 +2352,7 @@
         activateOperatorMode(true);
       } else {
         playBeep(180, 0.3, 'sawtooth');
-        appendSystemLine(`[SECURITY ALERT] Invalid Owner Key. Click "★ OP" at the top to use the secure login box.`, 'danger');
+        appendSystemLine(`[SECURITY ALERT] Invalid Owner Key. Click the "[?]" logo or open "⚙️ TOOLKIT" to use the secure login box.`, 'danger');
       }
     }
 
@@ -2857,7 +2963,7 @@
             displayText = decrypted;
             displayPlain = decrypted;
           } else {
-            displayText = `🔒 [AES-256 ENCRYPTED PACKET // CLICK '🔐 E2EE KEY' TO ENTER ROOM PASSPHRASE]`;
+            displayText = `🔒 [AES-256 ENCRYPTED PACKET // OPEN '⚙️ TOOLKIT' -> '🔐 AES-256 Room Key' TO UNLOCK]`;
           }
         }
 
@@ -2954,15 +3060,18 @@
     function updateConnectionUI() {
       const dot = document.getElementById('conn-dot');
       const text = document.getElementById('conn-text');
+      const badge = document.getElementById('conn-badge');
       const activeBrokers = mqttClients.filter(c => c && c.connected).length;
       const totalConns = activePeerConns.size + activeBrokers;
 
       if (totalConns > 0) {
         dot.className = 'w-2 h-2 rounded-full bg-[#00ff41]';
-        text.textContent = `MESH SECURE (${remotePeers.size + 1} NODES)`;
+        badge.className = 'cursor-pointer flex items-center space-x-1.5 px-2.5 py-1 rounded border border-[#00ff41]/50 bg-[#00220c] text-[#00ff41] text-xs hover:bg-[#003311] transition';
+        text.textContent = `${remotePeers.size + 1} ONLINE`;
       } else {
         dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
-        text.textContent = `SOLO OSCILLATOR (SCANNING...)`;
+        badge.className = 'cursor-pointer flex items-center space-x-1.5 px-2.5 py-1 rounded border border-amber-500/50 bg-amber-950/30 text-amber-400 text-xs hover:bg-[#002b0f] transition';
+        text.textContent = `SCANNING...`;
       }
     }
 
@@ -3363,7 +3472,7 @@
 
       document.getElementById('voice-rec-bar').classList.add('hidden');
       const voiceBtn = document.getElementById('voice-btn');
-      voiceBtn.textContent = '[VOICE]';
+      voiceBtn.textContent = '[🎙️ VOICE]';
       voiceBtn.classList.remove('border-red-500', 'bg-red-950/60', 'text-red-300');
 
       try {
@@ -3602,8 +3711,21 @@
           if (botMode === 'AUTO' && remotePeers.size > 0) return;
 
           playBeep(780, 0.06, 'square');
-          let reply = RIDDLER_RESPONSES[riddlerIdx % RIDDLER_RESPONSES.length];
-          riddlerIdx++;
+          const lower = String(userText || '').toLowerCase();
+          let reply = '';
+
+          if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
+            reply = "<?> GREETINGS FROM THE SHADOWS. YOU ARE CURRENTLY SOLO ON THIS FREQUENCY. CLICK '+ INVITE' TO LINK A FRIEND OR TYPE '/riddle' TO PLAY.";
+          } else if (lower.includes('batman') || lower.includes('vengeance') || lower.includes('bruce')) {
+            reply = "<?> VENGEANCE IS WATCHING. ONLY THE VERIFIED OWNER CAN UNLOCK THE [★ BATMAN] IDENTITY.";
+          } else if (lower.includes('riddle') || lower.includes('puzzle') || lower.includes('game')) {
+            reply = "<?> READY FOR A GAME? CLICK '⚙️ TOOLKIT' -> '❓ Riddler ARG Challenge' (OR TYPE '/riddle') TO UNLOCK YOUR [🦇 GCPD_VERIFIED] BADGE.";
+          } else if (lower.includes('who are you') || lower.includes('what is this')) {
+            reply = "<?> I AM THE RATAALADA AUTO-RESPONDER BOT. YOU CAN SET ME TO 'AUTO', 'ON', OR 'OFF' INSIDE '⚙️ TOOLKIT' -> '🤖 Riddler AI Responder'.";
+          } else {
+            reply = RIDDLER_RESPONSES[riddlerIdx % RIDDLER_RESPONSES.length];
+            riddlerIdx++;
+          }
 
           renderChatMessage({
             handle: '[?_RIDDLER_NODE]',
@@ -3636,6 +3758,10 @@
           openInfoGuideModal('tutorial');
           break;
 
+        case '/toolkit':
+          toggleToolkitDrawer();
+          break;
+
         case '/riddle':
           openRiddleModal();
           break;
@@ -3646,7 +3772,7 @@
           break;
 
         case '/ttl':
-          if (args === '10') ttlSeconds = 30; // cycleTtlMode will step to next or set directly
+          if (args === '10') ttlSeconds = 30;
           cycleTtlMode();
           break;
 
@@ -3708,8 +3834,9 @@
           break;
 
         case '/help':
-          appendSystemLine(`=== RATAALADA-CHAT v6.0 COMMANDS ===`, 'highlight');
+          appendSystemLine(`=== RATAALADA-CHAT v6.1 COMMANDS ===`, 'highlight');
           appendSystemLine(`/guide         - Open Complete Site Info & New User Tutorial`);
+          appendSystemLine(`/toolkit       - Open Spy & ARG Toolkit Drawer`);
           appendSystemLine(`/riddle        - Play Interactive Riddler ARG Minigame`);
           appendSystemLine(`/ttl           - Cycle Self-Destruct Timer (OFF / 10s / 30s)`);
           appendSystemLine(`/key [pass]    - Set AES-256 E2EE Room Passphrase`);
@@ -3783,13 +3910,14 @@
           break;
 
         default:
-          appendSystemLine(`[UNKNOWN COMMAND]: ${cmd}. Type /help or click '📖 GUIDE & INFO'.`, 'warning');
+          appendSystemLine(`[UNKNOWN COMMAND]: ${cmd}. Type /help or click '📖 GUIDE'.`, 'warning');
       }
     }
 
     function toggleCipherMode() {
       cipherMode = !cipherMode;
       document.getElementById('cipher-state').textContent = cipherMode ? 'ON (GLYPHS)' : 'OFF';
+      updateToolkitIndicatorDot();
       playBeep(cipherMode ? 960 : 540, 0.06);
     }
 
@@ -3937,6 +4065,7 @@
         closeInfoGuideModal();
         closeRiddleModal();
         closeE2eeModal();
+        closeAttachMenu();
         if (savedCustomUsername) closeUsernameModal();
       }
     });
@@ -3955,9 +4084,9 @@
       setRoomFrequency(initialRoom, true);
 
       const bootLines = [
-        `> INITIALIZING RATAALADA-CHAT SEC_MESH v6.0... [OK]`,
+        `> INITIALIZING RATAALADA-CHAT SEC_MESH v6.1... [OK]`,
         `> ACTIVE FREQUENCY CODE: [ ${roomId.toUpperCase()} ]`,
-        `> NEW USER? CLICK [📖 GUIDE & INFO] AT THE TOP FOR THE FULL TUTORIAL.`,
+        `> CLICK [📖 GUIDE] FOR TUTORIAL OR [⚙️ TOOLKIT] FOR SPY GADGETS.`,
         savedCustomUsername
           ? `> WELCOME BACK, ${myHandle}.`
           : `> [ ? ] TERMINAL READY. PLEASE LOG IN WITH YOUR CODENAME.`
