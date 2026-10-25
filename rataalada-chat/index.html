@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <title>rataalada-chat // encrypted terminal</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -23,21 +23,32 @@
       box-sizing: border-box;
       scrollbar-width: thin;
       scrollbar-color: var(--phosphor-dim) var(--bg-void);
+      -webkit-tap-highlight-color: transparent;
     }
 
     .hidden {
       display: none !important;
     }
 
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
     body {
       background-color: var(--bg-void);
       color: var(--phosphor);
       font-family: 'Share Tech Mono', monospace;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
       text-shadow: 0 0 6px rgba(0, 255, 65, 0.45);
       transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    .safe-bottom-pad {
+      padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
     }
 
     /* Dynamic CRT Phosphor Themes */
@@ -120,6 +131,10 @@
       box-shadow: 0 0 15px rgba(0, 255, 65, 0.15), inset 0 0 10px rgba(0, 255, 65, 0.06);
     }
 
+    .hero-glow-box {
+      box-shadow: 0 0 32px rgba(0, 255, 65, 0.18), inset 0 0 20px rgba(0, 255, 65, 0.08);
+    }
+
     .operator-glow {
       box-shadow: 0 0 18px rgba(255, 215, 0, 0.35), inset 0 0 10px rgba(255, 215, 0, 0.12);
       border-color: #ffd700 !important;
@@ -131,12 +146,16 @@
       text-shadow: 0 0 12px rgba(0, 255, 65, 0.8);
     }
 
+    .workspace-radial-bg {
+      background: radial-gradient(circle at 50% 42%, rgba(0, 55, 18, 0.28) 0%, rgba(2, 6, 2, 0.96) 72%);
+    }
+
     input::placeholder {
       color: rgba(0, 255, 65, 0.35);
     }
 
     ::-webkit-scrollbar {
-      width: 6px;
+      width: 5px;
     }
     ::-webkit-scrollbar-track {
       background: #010501;
@@ -150,7 +169,7 @@
     }
   </style>
 </head>
-<body class="h-screen w-screen flex flex-col select-text crt-flicker" id="terminal-body">
+<body class="h-[100dvh] w-screen flex overflow-hidden select-text crt-flicker" id="terminal-body">
 
   <!-- CRT Visual Overlays -->
   <div class="fixed inset-0 crt-scanlines z-40"></div>
@@ -186,333 +205,395 @@
     </div>
   </div>
 
-  <!-- Emergency Red Broadcast Banner (Owner Only Trigger) -->
-  <div id="broadcast-banner" class="hidden bg-red-950/90 border-b-2 border-red-500 text-red-200 px-4 py-2 text-xs sm:text-sm font-bold flex items-center justify-between z-30 shrink-0 animate-pulse">
-    <div class="flex items-center space-x-2">
-      <span class="text-red-500 text-lg">⚠️</span>
-      <span id="broadcast-text" class="tracking-widest uppercase">EMERGENCY SYSTEM BROADCAST ALERT</span>
-    </div>
-    <button onclick="dismissBroadcast()" class="text-red-400 hover:text-white px-2 py-0.5 border border-red-500 rounded text-xs">DISMISS</button>
-  </div>
+  <!-- Mobile Backdrop for Sidebar -->
+  <div id="sidebar-backdrop" onclick="toggleLeftSidebar()" class="fixed inset-0 bg-black/75 z-20 hidden md:hidden"></div>
 
-  <!-- Owner-Only Exclusive Control Bar (Hidden Unless Unlocked) -->
-  <div id="owner-control-bar" class="hidden bg-[#141200] border-b-2 border-[#ffd700] px-3 sm:px-5 py-2 flex flex-wrap items-center justify-between text-xs gap-2 z-25 shrink-0">
-    <div class="flex items-center space-x-2">
-      <span class="px-2 py-0.5 rounded bg-yellow-950/80 border border-[#ffd700] text-[#ffd700] font-bold tracking-widest text-[11px]">★ OPERATOR // [★ BATMAN]</span>
-    </div>
-    <div class="flex items-center flex-wrap gap-1.5">
-      <button onclick="toggleNodesDrawer()" class="px-2 py-0.5 rounded border border-yellow-500 bg-yellow-950/40 text-yellow-300 hover:bg-yellow-400 hover:text-black font-bold transition">
-        👥 NODES / KICK
-      </button>
-      <button onclick="ownerActionGlitchAll()" title="Shake & glitch every connected user's screen" class="px-2 py-0.5 rounded border border-emerald-400 bg-emerald-950/60 text-emerald-300 hover:bg-emerald-400 hover:text-black font-bold transition">
-        ⚡ GLITCH ALL
-      </button>
-      <button onclick="ownerActionLock()" class="px-2 py-0.5 rounded border border-yellow-500 bg-yellow-950/40 text-yellow-300 hover:bg-yellow-400 hover:text-black font-bold transition">
-        🔒 LOCK FREQ
-      </button>
-      <button onclick="ownerActionUnlock()" class="px-2 py-0.5 rounded border border-yellow-500 bg-yellow-950/40 text-yellow-300 hover:bg-yellow-400 hover:text-black font-bold transition">
-        🔓 UNLOCK
-      </button>
-      <button onclick="ownerActionRoomBurn()" title="Wipe chat history in this current frequency only" class="px-2 py-0.5 rounded border border-orange-500 bg-orange-950/50 text-orange-300 hover:bg-orange-500 hover:text-black font-bold transition">
-        🔥 ROOM BURN
-      </button>
-      <button onclick="ownerActionSiteWideBurn()" title="EMERGENCY: Wipe all terminals across ALL frequencies on the entire website" class="px-2 py-0.5 rounded border border-red-500 bg-red-950/80 text-red-300 hover:bg-red-600 hover:text-black font-bold transition animate-pulse">
-        ☢️ SITE-WIDE BURN
-      </button>
-      <button onclick="openBroadcastModal()" title="Broadcast emergency alert across ALL frequencies on the website" class="px-2 py-0.5 rounded border border-yellow-500 bg-yellow-950/40 text-yellow-300 hover:bg-yellow-400 hover:text-black font-bold transition">
-        📢 SITE-WIDE BROADCAST
-      </button>
-      <button onclick="ownerDeop()" class="px-2 py-0.5 rounded border border-neutral-600 bg-neutral-900 text-neutral-300 hover:bg-neutral-800 transition">
-        DEOP
-      </button>
-    </div>
-  </div>
+  <!-- =================================================================== -->
+  <!-- 1. HIDEABLE LEFT SIDEBAR (ALL FEATURES + BOTTOM USERNAME DISPLAY)   -->
+  <!-- =================================================================== -->
+  <aside id="left-sidebar" class="fixed md:static inset-y-0 left-0 w-72 sm:w-80 max-w-[85vw] border-r subtle-border bg-[#020a03]/95 backdrop-blur-md flex flex-col justify-between z-30 shrink-0 glow-box select-none">
 
-  <!-- STREAMLINED SINGLE TOP HEADER BAR (Decluttered v6.1 UI) -->
-  <header class="border-b subtle-border bg-[#030d05]/95 px-3 sm:px-5 py-2.5 flex flex-wrap items-center justify-between gap-2.5 z-20 shrink-0">
-    <!-- Left Side: Branding + Frequency Code + Join/Invite -->
-    <div class="flex items-center flex-wrap gap-2 sm:gap-3">
-      <div class="flex items-center space-x-2.5">
-        <div onclick="openOpAuthModal()" title="Operator Terminal Access" class="cursor-pointer w-8 h-8 rounded border border-[#00ff41] flex items-center justify-center bg-[#00240b] glow-box hover:border-yellow-400 transition shrink-0">
-          <span class="riddler-q text-2xl font-bold leading-none select-none">?</span>
-        </div>
-        <div>
-          <div class="flex items-center space-x-1.5">
-            <h1 class="text-sm sm:text-base font-bold tracking-widest uppercase">RATAALADA-CHAT</h1>
-            <span id="riddler-solved-badge" class="hidden text-[10px] px-1.5 py-0.5 rounded bg-yellow-950/80 border border-yellow-400 text-yellow-300 font-bold">🦇 VERIFIED</span>
+    <!-- TOP OF LEFT SIDEBAR: Brand Logo + Hide Sidebar Icon + Frequency Bar -->
+    <div class="p-3.5 border-b subtle-border space-y-3 shrink-0">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <div onclick="openOpAuthModal()" title="Operator Terminal Access" class="cursor-pointer w-8 h-8 rounded border border-[#00ff41] flex items-center justify-center bg-[#00240b] glow-box hover:border-yellow-400 transition shrink-0">
+            <span class="riddler-q text-2xl font-bold leading-none">?</span>
           </div>
-          <p class="text-[10px] text-emerald-500/80 tracking-wider hidden md:block">P2P ENCRYPTED TERMINAL</p>
+          <div>
+            <div class="flex items-center space-x-1.5">
+              <h1 class="text-sm font-bold tracking-widest uppercase text-[#00ff41]">RATAALADA-CHAT</h1>
+              <span id="riddler-solved-badge" class="hidden text-[9px] px-1.5 py-0.5 rounded bg-yellow-950/90 border border-yellow-400 text-yellow-300 font-bold">🦇</span>
+            </div>
+            <p class="text-[9px] text-emerald-500/80 tracking-widest">SEC_MESH // v7.0</p>
+          </div>
+        </div>
+
+        <!-- Hide Sidebar Toggle Button (Top-Right of Left Sidebar, per sketch) -->
+        <button onclick="toggleLeftSidebar()" title="Hide Sidebar (Full-Screen Workspace)" class="w-8 h-8 rounded border subtle-border bg-[#001a07] hover:bg-[#00ff41] hover:text-black flex items-center justify-center text-sm font-bold transition">
+          ◧
+        </button>
+      </div>
+
+      <!-- Frequency Pill Bar (Second Pill at Top of Sidebar in sketch) -->
+      <div class="space-y-1.5">
+        <button onclick="copyFreqCode()" title="Click to Copy 6-Digit Frequency Code" class="w-full flex items-center justify-between bg-[#001806] hover:bg-[#002d0e] px-3 py-2 rounded-full border border-[#00ff41]/60 transition group glow-box">
+          <span class="text-[11px] text-emerald-400 font-bold tracking-wider">FREQ CODE:</span>
+          <div class="flex items-center space-x-1.5">
+            <code id="room-display-id" class="text-[#00ff41] font-bold tracking-[0.2em] text-xs sm:text-sm">------</code>
+            <span class="text-xs opacity-75 group-hover:opacity-100">📋</span>
+          </div>
+        </button>
+
+        <div class="grid grid-cols-2 gap-1.5">
+          <button onclick="openJoinModal()" class="text-[11px] py-1.5 rounded-full border subtle-border bg-[#001606] hover:bg-[#00ff41] hover:text-black font-bold tracking-wider transition">
+            🔗 JOIN FREQ
+          </button>
+          <button onclick="openShareModal()" class="text-[11px] py-1.5 rounded-full border border-[#00ff41] bg-[#002e0f] hover:bg-[#00ff41] hover:text-black font-bold tracking-wider transition glow-box">
+            + INVITE QR
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MIDDLE OF LEFT SIDEBAR: Scrollable All-Features Hub -->
+    <div class="flex-1 overflow-y-auto p-3.5 space-y-4 text-xs">
+
+      <!-- Section A: Connected Nodes on Frequency -->
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold tracking-widest text-emerald-500 uppercase">🟢 NODES ON FREQUENCY</span>
+          <button onclick="sendPingTest()" class="text-[10px] px-2 py-0.5 rounded border subtle-border bg-[#001a07] hover:bg-[#00ff41] hover:text-black font-bold transition">
+            PING
+          </button>
+        </div>
+
+        <button id="conn-badge" onclick="toggleSidebarNodesList()" class="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-amber-500/50 bg-amber-950/20 text-amber-400 hover:bg-[#00240b] transition">
+          <div class="flex items-center space-x-2">
+            <span id="conn-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            <span id="conn-text" class="font-bold tracking-wider">SCANNING...</span>
+          </div>
+          <span class="text-[10px] opacity-80">VIEW ▾</span>
+        </button>
+
+        <!-- Expandable Connected Peers List -->
+        <div id="nodes-list" class="hidden space-y-1.5 pt-1 max-h-40 overflow-y-auto pr-1"></div>
+      </div>
+
+      <!-- Section B: Privacy & Encryption Gadgets -->
+      <div class="space-y-1.5 pt-2 border-t subtle-border">
+        <span class="text-[10px] font-bold tracking-widest text-emerald-500 uppercase block">🕵️ PRIVACY &amp; ENCRYPTION</span>
+
+        <button id="e2ee-btn" onclick="openE2eeModal()" class="w-full flex items-center justify-between px-3 py-2 rounded-lg border subtle-border bg-[#001505] hover:bg-[#002b0d] transition">
+          <span>🔐 AES-256 Room Key</span>
+          <span id="e2ee-state" class="font-bold text-[#00ff41]">OPEN</span>
+        </button>
+
+        <button id="ttl-toggle-btn" onclick="cycleTtlMode()" class="w-full flex items-center justify-between px-3 py-2 rounded-lg border subtle-border bg-[#001505] hover:bg-[#002b0d] transition">
+          <span>⏱️ Self-Destruct (TTL)</span>
+          <span id="ttl-state" class="font-bold text-[#00ff41]">OFF</span>
+        </button>
+
+        <button id="cipher-toggle-btn" onclick="toggleCipherMode()" class="w-full flex items-center justify-between px-3 py-2 rounded-lg border subtle-border bg-[#001505] hover:bg-[#002b0d] transition">
+          <span>🔣 Glyph Cipher Mode</span>
+          <span id="cipher-state" class="font-bold text-[#00ff41]">OFF</span>
+        </button>
+
+        <div class="grid grid-cols-2 gap-1.5 pt-0.5">
+          <button onclick="closeMobileSidebarIfOpen(); toggleStealthMode();" class="px-2 py-2 rounded-lg border subtle-border bg-[#001806] hover:bg-[#00ff41] hover:text-black font-bold transition text-center text-[11px]">
+            🕵️ STEALTH (~)
+          </button>
+          <button onclick="closeMobileSidebarIfOpen(); burnSession();" class="px-2 py-2 rounded-lg border border-red-600/60 bg-red-950/30 text-red-400 hover:bg-red-600 hover:text-black font-bold transition text-center text-[11px]">
+            🔥 BURN CHAT
+          </button>
         </div>
       </div>
 
-      <div class="h-5 w-[1px] bg-emerald-900/80 hidden sm:block"></div>
+      <!-- Section C: ARG, Audio & CRT Visuals -->
+      <div class="space-y-1.5 pt-2 border-t subtle-border">
+        <span class="text-[10px] font-bold tracking-widest text-emerald-500 uppercase block">🎮 ARG &amp; AUDIO / VISUAL</span>
 
-      <!-- Frequency Pill + Join + Invite -->
-      <div class="flex items-center space-x-1.5">
-        <button onclick="copyFreqCode()" title="Click to Copy 6-Digit Frequency Code" class="flex items-center space-x-1.5 bg-[#00200b] hover:bg-[#003614] px-2.5 py-1 rounded border border-[#00ff41]/50 transition group">
-          <span class="text-[11px] text-emerald-400 font-bold">FREQ:</span>
-          <code id="room-display-id" class="text-[#00ff41] font-bold tracking-widest text-xs sm:text-sm">------</code>
-          <span class="text-[10px] text-emerald-400/70 group-hover:text-[#00ff41]">📋</span>
+        <button onclick="openRiddleModal()" class="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-[#00ff41]/70 bg-[#00260c] hover:bg-[#00ff41] hover:text-black font-bold transition glow-box">
+          <span>❓ Riddler ARG Challenge</span>
+          <span>PLAY ▸</span>
         </button>
 
-        <button onclick="openJoinModal()" title="Enter a Friend's 6-Digit Frequency Code" class="text-xs px-2.5 py-1 rounded border subtle-border bg-[#001a07] hover:bg-[#00ff41] hover:text-black font-bold transition">
-          JOIN
+        <button onclick="toggleRiddlerBot()" class="w-full flex items-center justify-between px-3 py-2 rounded-lg border subtle-border bg-[#001505] hover:bg-[#002b0d] transition">
+          <span>🤖 Riddler AI Responder</span>
+          <span id="toolkit-bot-label" class="font-bold text-[#00ff41]">AUTO</span>
         </button>
 
-        <button onclick="openShareModal()" title="Share Link or QR Code" class="text-xs px-2.5 py-1 rounded border border-[#00ff41] bg-[#003812] hover:bg-[#00ff41] hover:text-black font-bold tracking-wider transition glow-box">
-          + INVITE
+        <button onclick="cycleVoiceFx()" class="w-full flex items-center justify-between px-3 py-2 rounded-lg border subtle-border bg-[#001505] hover:bg-[#002b0d] transition">
+          <span>🎙️ Voice Changer FX</span>
+          <span id="voice-fx-label" class="font-bold text-[#00ff41]">NORMAL</span>
+        </button>
+
+        <button onclick="cycleCrtTheme()" class="w-full flex items-center justify-between px-3 py-2 rounded-lg border subtle-border bg-[#001505] hover:bg-[#002b0d] transition">
+          <span>🖥️ CRT Monitor Theme</span>
+          <span id="crt-theme-label" class="font-bold text-[#00ff41]">GREEN</span>
+        </button>
+
+        <button id="audio-btn" onclick="toggleAudio()" class="w-full flex items-center justify-between px-3 py-2 rounded-lg border subtle-border bg-[#001505] hover:bg-[#002b0d] transition">
+          <span>🔊 Terminal Sound FX</span>
+          <span id="audio-label" class="font-bold text-[#00ff41]">SFX: ON</span>
+        </button>
+      </div>
+
+      <!-- Section D: Security Audit & Operator Access -->
+      <div class="space-y-1.5 pt-2 border-t subtle-border">
+        <span class="text-[10px] font-bold tracking-widest text-yellow-500/80 uppercase block">👑 SECURITY &amp; ADMIN</span>
+
+        <button onclick="openInfoGuideModal('about'); setTimeout(runLiveCryptoSelfTest, 150);" class="w-full flex items-center justify-between px-3 py-2 rounded-lg border subtle-border bg-[#001505] hover:bg-[#002b0d] text-emerald-300 transition">
+          <span>🛡️ Live AES-256 Audit</span>
+          <span>VERIFY ▸</span>
+        </button>
+
+        <button onclick="openOpAuthModal()" class="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-yellow-600/50 bg-yellow-950/20 text-yellow-400 hover:bg-yellow-500 hover:text-black font-bold transition">
+          <span>★ Operator Login</span>
+          <span>[★ BATMAN]</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- BOTTOM OF LEFT SIDEBAR: Pinned Username Display Pill (Per Sketch) -->
+    <div class="p-3 border-t subtle-border bg-[#010702] shrink-0 safe-bottom-pad">
+      <button onclick="openUsernameModal(false)" title="Click to change your unique username anytime" class="w-full py-2.5 px-3.5 rounded-full border-2 border-[#00ff41]/80 bg-[#001d09] hover:bg-[#00ff41] hover:text-black transition flex items-center justify-between glow-box group">
+        <div class="flex items-center space-x-2 truncate">
+          <span class="w-2 h-2 rounded-full bg-[#00ff41] shrink-0"></span>
+          <span class="text-[11px] opacity-80">USER:</span>
+          <span id="handle-display" class="font-bold tracking-wider truncate underline">[ANON_01]</span>
+        </div>
+        <span class="text-[11px] px-1.5 py-0.5 rounded bg-black/50 group-hover:bg-black group-hover:text-[#00ff41] font-bold shrink-0">✎ EDIT</span>
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- =================================================================== -->
+  <!-- 2. MAIN RIGHT WORKSPACE (TOP-RIGHT GUIDE + HERO WELCOME + CHAT BOX) -->
+  <!-- =================================================================== -->
+  <div class="flex-1 flex flex-col h-full overflow-hidden relative workspace-radial-bg">
+
+    <!-- Emergency Red Broadcast Banner (Owner Only Trigger) -->
+    <div id="broadcast-banner" class="hidden bg-red-950/90 border-b-2 border-red-500 text-red-200 px-4 py-2 text-xs sm:text-sm font-bold flex items-center justify-between z-30 shrink-0 animate-pulse">
+      <div class="flex items-center space-x-2">
+        <span class="text-red-500 text-lg">⚠️</span>
+        <span id="broadcast-text" class="tracking-widest uppercase">EMERGENCY SYSTEM BROADCAST ALERT</span>
+      </div>
+      <button onclick="dismissBroadcast()" class="text-red-400 hover:text-white px-2 py-0.5 border border-red-500 rounded text-xs">DISMISS</button>
+    </div>
+
+    <!-- Owner-Only Exclusive Control Bar (Hidden Unless Unlocked as [★ BATMAN]) -->
+    <div id="owner-control-bar" class="hidden bg-[#141200] border-b-2 border-[#ffd700] px-3 sm:px-5 py-2 flex flex-wrap items-center justify-between text-xs gap-2 z-25 shrink-0">
+      <div class="flex items-center space-x-2">
+        <span class="px-2 py-0.5 rounded bg-yellow-950/80 border border-[#ffd700] text-[#ffd700] font-bold tracking-widest text-[11px]">★ OPERATOR // [★ BATMAN]</span>
+      </div>
+      <div class="flex items-center flex-wrap gap-1.5">
+        <button onclick="openSidebarAndShowNodes()" class="px-2 py-0.5 rounded border border-yellow-500 bg-yellow-950/40 text-yellow-300 hover:bg-yellow-400 hover:text-black font-bold transition">
+          👥 NODES / KICK
+        </button>
+        <button onclick="ownerActionGlitchAll()" title="Shake & glitch every connected user's screen" class="px-2 py-0.5 rounded border border-emerald-400 bg-emerald-950/60 text-emerald-300 hover:bg-emerald-400 hover:text-black font-bold transition">
+          ⚡ GLITCH ALL
+        </button>
+        <button onclick="ownerActionLock()" class="px-2 py-0.5 rounded border border-yellow-500 bg-yellow-950/40 text-yellow-300 hover:bg-yellow-400 hover:text-black font-bold transition">
+          🔒 LOCK FREQ
+        </button>
+        <button onclick="ownerActionUnlock()" class="px-2 py-0.5 rounded border border-yellow-500 bg-yellow-950/40 text-yellow-300 hover:bg-yellow-400 hover:text-black font-bold transition">
+          🔓 UNLOCK
+        </button>
+        <button onclick="ownerActionRoomBurn()" title="Wipe chat history in this current frequency only" class="px-2 py-0.5 rounded border border-orange-500 bg-orange-950/50 text-orange-300 hover:bg-orange-500 hover:text-black font-bold transition">
+          🔥 ROOM BURN
+        </button>
+        <button onclick="ownerActionSiteWideBurn()" title="EMERGENCY: Wipe all terminals across ALL frequencies on the entire website" class="px-2 py-0.5 rounded border border-red-500 bg-red-950/80 text-red-300 hover:bg-red-600 hover:text-black font-bold transition animate-pulse">
+          ☢️ SITE-WIDE BURN
+        </button>
+        <button onclick="openBroadcastModal()" title="Broadcast emergency alert across ALL frequencies on the website" class="px-2 py-0.5 rounded border border-yellow-500 bg-yellow-950/40 text-yellow-300 hover:bg-yellow-400 hover:text-black font-bold transition">
+          📢 SITE-WIDE BROADCAST
+        </button>
+        <button onclick="ownerDeop()" class="px-2 py-0.5 rounded border border-neutral-600 bg-neutral-900 text-neutral-300 hover:bg-neutral-800 transition">
+          DEOP
         </button>
       </div>
     </div>
 
-    <!-- Right Side: Essential Status, Identity, Guide & Toolkit Menu -->
-    <div class="flex items-center flex-wrap gap-1.5 sm:gap-2">
-      <!-- Live Connected Users Drawer Trigger -->
-      <button id="conn-badge" onclick="toggleNodesDrawer()" title="Click to view connected users in this room" class="cursor-pointer flex items-center space-x-1.5 px-2.5 py-1 rounded border border-amber-500/50 bg-amber-950/30 text-amber-400 text-xs hover:bg-[#002b0f] transition">
-        <span id="conn-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-        <span id="conn-text" class="font-bold">SCANNING...</span>
-      </button>
+    <!-- MINIMAL TOP WORKSPACE BAR (Sidebar Re-Open Button on Left + GUIDE Pill on Top-Right) -->
+    <header class="px-3 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between z-20 shrink-0">
+      <!-- Left: Appears when Left Sidebar is hidden (or on mobile) -->
+      <div class="flex items-center space-x-2">
+        <button id="open-sidebar-btn" onclick="toggleLeftSidebar()" title="Open Features Sidebar" class="hidden px-3 py-1.5 rounded-full border border-[#00ff41] bg-[#00240b] hover:bg-[#00ff41] hover:text-black text-xs font-bold tracking-wider transition glow-box flex items-center space-x-1.5">
+          <span>◧</span>
+          <span>FEATURES</span>
+          <span id="toolkit-active-dot" class="hidden w-2 h-2 rounded-full bg-yellow-400 animate-ping"></span>
+        </button>
+      </div>
 
-      <!-- User Identity Pill -->
-      <button onclick="openUsernameModal(false)" title="Click to change your unique username anytime" class="text-xs border border-[#00ff41]/70 px-2.5 py-1 rounded bg-[#00220c] hover:bg-[#00ff41] hover:text-black transition flex items-center space-x-1">
-        <span class="opacity-80">ID:</span>
-        <span id="handle-display" class="font-bold underline">[ANON_01]</span>
-        <span class="text-[10px] opacity-80">✎</span>
-      </button>
+      <!-- Right: Guide Pill + CRT Theme Dot (Exact Match to Sketch Top-Right) -->
+      <div class="flex items-center space-x-2 sm:space-x-2.5 ml-auto">
+        <button onclick="openInfoGuideModal('tutorial')" title="Site Information & Complete New User Tutorial" class="px-3.5 sm:px-4 py-1.5 rounded-full border border-[#00ff41]/80 bg-[#001d09]/90 hover:bg-[#00ff41] hover:text-black text-xs sm:text-sm font-bold tracking-widest transition glow-box flex items-center space-x-1.5">
+          <span>📖</span>
+          <span>GUIDE</span>
+        </button>
+        <button onclick="cycleCrtTheme()" title="Switch CRT Monitor Phosphor Color (Green / Red / Amber / Cyan)" class="w-8 h-8 rounded-full border border-[#00ff41]/70 bg-[#001d09] hover:bg-[#00ff41] hover:text-black flex items-center justify-center text-xs font-bold transition glow-box">
+          ◐
+        </button>
+      </div>
+    </header>
 
-      <!-- Info & Tutorial Guide Button -->
-      <button onclick="openInfoGuideModal('tutorial')" title="Site Information & Complete New User Tutorial" class="text-xs px-2.5 py-1 rounded border subtle-border bg-[#001a07] hover:bg-[#00ff41] hover:text-black font-bold tracking-wider transition">
-        📖 GUIDE
-      </button>
+    <!-- MAIN SCROLLABLE WORKSPACE AREA (Centered Welcome Hero Card + Live Chat Stream) -->
+    <main id="workspace-scroll" class="flex-1 overflow-y-auto px-3 sm:px-8 py-2 flex flex-col z-10" onclick="focusInput()">
 
-      <!-- All-In-One Toolkit Drawer Button -->
-      <button id="toolkit-btn" onclick="toggleToolkitDrawer()" title="Open Spy & ARG Toolkit (Encryption, Self-Destruct, Voice FX, Riddles, CRT Themes)" class="text-xs px-3 py-1 rounded border border-[#00ff41] bg-[#002b0f] hover:bg-[#00ff41] hover:text-black font-bold tracking-wider transition glow-box flex items-center space-x-1">
-        <span>⚙️ TOOLKIT</span>
-        <span id="toolkit-active-dot" class="hidden w-1.5 h-1.5 rounded-full bg-yellow-400 animate-ping"></span>
-        <span class="text-[10px]">▾</span>
-      </button>
-    </div>
-  </header>
+      <!-- CENTERED WELCOME HERO BANNER (Exact Match to Sketch Center) -->
+      <div id="welcome-hero-wrapper" class="my-auto py-4 sm:py-6 flex flex-col items-center justify-center text-center select-none transition-all duration-300">
+        <!-- Top Status Pill Above Welcome Box -->
+        <div class="mb-3 px-4 sm:px-5 py-1.5 rounded-full border subtle-border bg-[#011105]/90 text-[10px] sm:text-xs text-emerald-400 tracking-[0.16em] sm:tracking-[0.2em] uppercase flex items-center space-x-2 glow-box">
+          <span class="w-2 h-2 rounded-full bg-[#00ff41] animate-ping shrink-0"></span>
+          <span>P2P ENCRYPTED FREQUENCY // <strong id="hero-freq-label" class="text-[#00ff41]">------</strong></span>
+        </div>
 
-  <!-- Main Workspace Wrapper (Terminal Output + Slide-Out Drawers) -->
-  <div class="flex-1 flex overflow-hidden relative">
-    <!-- Main Terminal Log Area -->
-    <main id="terminal-output" class="flex-1 overflow-y-auto p-3 sm:p-6 space-y-2.5 text-sm sm:text-base z-10 leading-relaxed" onclick="focusInput()">
+        <!-- Big Rounded Welcome Back User Card -->
+        <div class="w-full max-w-xl rounded-3xl border-2 border-[#00ff41]/80 bg-[#020f05]/90 px-5 py-6 sm:px-10 sm:py-9 hero-glow-box space-y-3.5 sm:space-y-4">
+          <div class="riddler-q text-4xl sm:text-5xl text-[#00ff41] font-bold tracking-widest leading-none">? ? ?</div>
+          <h2 class="text-base sm:text-2xl font-bold tracking-[0.1em] sm:tracking-[0.12em] text-[#00ff41] uppercase break-words">
+            WELCOME BACK, <span id="hero-username-display" class="underline decoration-[#00ff41]/60">[ANON_01]</span>
+          </h2>
+          <p class="text-xs sm:text-sm text-emerald-300/80 max-w-md mx-auto leading-relaxed">
+            Zero-database P2P terminal active. Share your 6-digit frequency code to link a friend's device, or type below to begin transmitting.
+          </p>
+          <div class="flex flex-wrap items-center justify-center gap-2 pt-1.5">
+            <button type="button" onclick="openShareModal()" class="px-3.5 sm:px-4 py-1.5 rounded-full border border-[#00ff41] bg-[#002b0f] hover:bg-[#00ff41] hover:text-black text-xs font-bold tracking-wider transition glow-box">
+              + INVITE FRIEND
+            </button>
+            <button type="button" onclick="openJoinModal()" class="px-3.5 sm:px-4 py-1.5 rounded-full border subtle-border bg-[#001806] hover:bg-[#00ff41] hover:text-black text-xs font-bold tracking-wider transition">
+              🔗 JOIN CODE
+            </button>
+            <button type="button" onclick="openRiddleModal()" class="px-3.5 sm:px-4 py-1.5 rounded-full border subtle-border bg-[#001806] hover:bg-[#00ff41] hover:text-black text-xs font-bold tracking-wider transition">
+              ❓ RIDDLER ARG
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Terminal Chat & System Output Stream -->
+      <div id="terminal-output" class="w-full max-w-4xl mx-auto space-y-2.5 text-sm sm:text-base leading-relaxed pb-2">
+      </div>
+
     </main>
 
-    <!-- Slide-Out Drawer 1: ⚙️ SPY & ARG TOOLKIT MENU -->
-    <aside id="toolkit-drawer" class="hidden w-72 sm:w-80 border-l subtle-border bg-[#020c04]/95 p-4 flex flex-col justify-between z-30 shrink-0 glow-box overflow-y-auto">
-      <div class="space-y-4">
-        <div class="flex items-center justify-between border-b subtle-border pb-2.5">
-          <span class="text-xs font-bold tracking-widest uppercase text-[#00ff41]">⚙️ TERMINAL TOOLKIT</span>
-          <button onclick="toggleToolkitDrawer()" class="text-xs px-2 py-0.5 border subtle-border rounded hover:bg-[#00ff41] hover:text-black">✕</button>
-        </div>
+    <!-- Remote Peer Typing Indicator -->
+    <div id="typing-indicator" class="hidden px-6 py-1 text-xs text-emerald-400/90 bg-[#020b04]/90 border-t border-emerald-950/60 italic tracking-wider z-20 max-w-4xl mx-auto w-full rounded-t-lg">
+      <span class="inline-block animate-pulse">▶ REMOTE TERMINAL IS TRANSMITTING KEYSTROKES...</span>
+    </div>
 
-        <!-- Group 1: Privacy & Encryption -->
-        <div class="space-y-2">
-          <span class="text-[10px] font-bold tracking-widest text-emerald-500 uppercase block">🕵️ PRIVACY &amp; ENCRYPTION</span>
-
-          <button id="e2ee-btn" onclick="openE2eeModal()" class="w-full flex items-center justify-between px-3 py-2 rounded border subtle-border bg-[#001806] hover:bg-[#003010] text-xs transition">
-            <span>🔐 AES-256 Room Key</span>
-            <span id="e2ee-state" class="font-bold text-[#00ff41]">OPEN</span>
-          </button>
-
-          <button id="ttl-toggle-btn" onclick="cycleTtlMode()" class="w-full flex items-center justify-between px-3 py-2 rounded border subtle-border bg-[#001806] hover:bg-[#003010] text-xs transition">
-            <span>⏱️ Self-Destruct (TTL)</span>
-            <span id="ttl-state" class="font-bold text-[#00ff41]">OFF</span>
-          </button>
-
-          <button id="cipher-toggle-btn" onclick="toggleCipherMode()" class="w-full flex items-center justify-between px-3 py-2 rounded border subtle-border bg-[#001806] hover:bg-[#003010] text-xs transition">
-            <span>🔣 Glyph Cipher Mode</span>
-            <span id="cipher-state" class="font-bold text-[#00ff41]">OFF</span>
-          </button>
-
-          <div class="grid grid-cols-2 gap-2 pt-1">
-            <button onclick="toggleStealthMode()" class="px-2.5 py-2 rounded border subtle-border bg-[#001a07] hover:bg-[#00ff41] hover:text-black text-xs font-bold transition text-center">
-              🕵️ STEALTH (~)
-            </button>
-            <button onclick="burnSession()" class="px-2.5 py-2 rounded border border-red-600/60 bg-red-950/30 text-red-400 hover:bg-red-600 hover:text-black text-xs font-bold transition text-center">
-              🔥 BURN CHAT
-            </button>
-          </div>
-        </div>
-
-        <!-- Group 2: ARG, Audio & Visuals -->
-        <div class="space-y-2 pt-2 border-t subtle-border">
-          <span class="text-[10px] font-bold tracking-widest text-emerald-500 uppercase block">🎮 ARG &amp; AUDIO / VISUAL</span>
-
-          <button onclick="openRiddleModal()" class="w-full flex items-center justify-between px-3 py-2 rounded border border-[#00ff41]/70 bg-[#00290d] hover:bg-[#00ff41] hover:text-black text-xs font-bold transition glow-box">
-            <span>❓ Riddler ARG Challenge</span>
-            <span>PLAY ▸</span>
-          </button>
-
-          <button onclick="toggleRiddlerBot()" class="w-full flex items-center justify-between px-3 py-2 rounded border subtle-border bg-[#001806] hover:bg-[#003010] text-xs transition">
-            <span>🤖 Riddler AI Responder</span>
-            <span id="toolkit-bot-label" class="font-bold text-[#00ff41]">AUTO</span>
-          </button>
-
-          <button onclick="cycleVoiceFx()" class="w-full flex items-center justify-between px-3 py-2 rounded border subtle-border bg-[#001806] hover:bg-[#003010] text-xs transition">
-            <span>🎙️ Voice Changer FX</span>
-            <span id="voice-fx-label" class="font-bold text-[#00ff41]">NORMAL</span>
-          </button>
-
-          <button onclick="cycleCrtTheme()" class="w-full flex items-center justify-between px-3 py-2 rounded border subtle-border bg-[#001806] hover:bg-[#003010] text-xs transition">
-            <span>🖥️ CRT Monitor Theme</span>
-            <span id="crt-theme-label" class="font-bold text-[#00ff41]">GREEN</span>
-          </button>
-
-          <button id="audio-btn" onclick="toggleAudio()" class="w-full flex items-center justify-between px-3 py-2 rounded border subtle-border bg-[#001806] hover:bg-[#003010] text-xs transition">
-            <span>🔊 Terminal Sound FX</span>
-            <span id="audio-label" class="font-bold text-[#00ff41]">SFX: ON</span>
-          </button>
-        </div>
-
-        <!-- Group 3: Operator Access -->
-        <div class="space-y-2 pt-2 border-t subtle-border">
-          <span class="text-[10px] font-bold tracking-widest text-yellow-500/80 uppercase block">👑 SYSTEM ADMINISTRATION</span>
-          <button onclick="openOpAuthModal()" class="w-full flex items-center justify-between px-3 py-2 rounded border border-yellow-600/50 bg-yellow-950/20 text-yellow-400 hover:bg-yellow-500 hover:text-black text-xs font-bold transition">
-            <span>★ Operator Login</span>
-            <span>[★ BATMAN]</span>
-          </button>
-        </div>
+    <!-- Active Reply Quote Preview Bar (#9) -->
+    <div id="reply-preview-bar" class="hidden px-4 sm:px-5 py-1.5 bg-[#001f0a] border-t border-x border-[#00ff41]/50 flex items-center justify-between text-xs z-20 shrink-0 max-w-4xl mx-auto w-full rounded-t-xl">
+      <div class="flex items-center space-x-2 truncate pr-2">
+        <span class="text-[#00ff41] font-bold">↩ REPLYING TO</span>
+        <span id="reply-target-handle" class="font-bold underline text-emerald-300"></span>:
+        <span id="reply-target-text" class="text-emerald-400/80 truncate italic"></span>
       </div>
+      <button type="button" onclick="cancelReply()" class="text-red-400 hover:text-white px-2 py-0.5 border border-red-500/50 rounded text-[10px]">CANCEL ✕</button>
+    </div>
 
-      <div class="border-t subtle-border pt-3 mt-4 text-[11px] text-emerald-500/70 text-center">
-        RATAALADA-CHAT // SEC_MESH v6.1
+    <!-- Voice Recording Active Bar -->
+    <div id="voice-rec-bar" class="hidden px-4 sm:px-5 py-2 bg-red-950/60 border-t border-x border-red-500/60 flex items-center justify-between text-xs z-20 shrink-0 max-w-4xl mx-auto w-full rounded-t-xl">
+      <div class="flex items-center space-x-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping shrink-0"></span>
+        <span class="text-red-300 font-bold tracking-wider">REC (<span id="rec-fx-indicator">NORMAL</span>):</span>
+        <span id="voice-timer" class="text-[#00ff41] font-mono font-bold text-sm">00:00</span>
       </div>
-    </aside>
-
-    <!-- Slide-Out Drawer 2: Live Connected Users Sidebar (#7) -->
-    <aside id="nodes-drawer" class="hidden w-72 sm:w-80 border-l subtle-border bg-[#020c04]/95 p-4 flex flex-col justify-between z-30 shrink-0 glow-box">
-      <div>
-        <div class="flex items-center justify-between border-b subtle-border pb-2.5 mb-3">
-          <span class="text-xs font-bold tracking-widest uppercase text-[#00ff41]">🟢 NODES ON FREQUENCY</span>
-          <button onclick="toggleNodesDrawer()" class="text-xs px-2 py-0.5 border subtle-border rounded hover:bg-[#00ff41] hover:text-black">✕</button>
-        </div>
-        <div id="nodes-list" class="space-y-2 max-h-[60vh] overflow-y-auto pr-1 text-xs">
-        </div>
-      </div>
-
-      <div class="border-t subtle-border pt-3 text-[11px] text-emerald-400/80 space-y-2">
-        <div class="flex items-center justify-between">
-          <span>BOT RESPONDER:</span>
-          <button onclick="toggleRiddlerBot()" class="px-2 py-0.5 rounded border subtle-border bg-[#001a07] hover:bg-[#003311] text-[#00ff41] font-bold">
-            <span id="bot-label">AUTO</span>
-          </button>
-        </div>
-        <button onclick="sendPingTest()" class="w-full py-1.5 rounded border border-[#00ff41] bg-[#00290d] hover:bg-[#00ff41] hover:text-black font-bold tracking-wider transition">
-          PING ALL NODES
+      <div class="flex items-center space-x-1.5 sm:space-x-2">
+        <button type="button" onclick="stopVoiceRecording(false)" class="px-2.5 py-1 rounded-full border border-red-500/60 text-red-300 hover:bg-red-600 hover:text-black font-bold transition">
+          ✕
+        </button>
+        <button type="button" onclick="stopVoiceRecording(true)" class="px-3 py-1 rounded-full border border-[#00ff41] bg-[#003b14] text-[#00ff41] hover:bg-[#00ff41] hover:text-black font-bold transition glow-box">
+          SEND ⏎
         </button>
       </div>
-    </aside>
-  </div>
-
-  <!-- Remote Peer Typing Indicator -->
-  <div id="typing-indicator" class="hidden px-4 sm:px-6 py-1 text-xs text-emerald-400/90 bg-[#020b04] border-t border-emerald-950/60 italic tracking-wider z-20">
-    <span class="inline-block animate-pulse">▶ REMOTE TERMINAL IS TRANSMITTING KEYSTROKES...</span>
-  </div>
-
-  <!-- Active Reply Quote Preview Bar (#9) -->
-  <div id="reply-preview-bar" class="hidden px-3 sm:px-6 py-1.5 bg-[#001f0a] border-t border-[#00ff41]/50 flex items-center justify-between text-xs z-20 shrink-0">
-    <div class="flex items-center space-x-2 truncate pr-2">
-      <span class="text-[#00ff41] font-bold">↩ REPLYING TO</span>
-      <span id="reply-target-handle" class="font-bold underline text-emerald-300"></span>:
-      <span id="reply-target-text" class="text-emerald-400/80 truncate italic"></span>
-    </div>
-    <button type="button" onclick="cancelReply()" class="text-red-400 hover:text-white px-2 py-0.5 border border-red-500/50 rounded text-[10px]">CANCEL ✕</button>
-  </div>
-
-  <!-- Voice Recording Active Bar -->
-  <div id="voice-rec-bar" class="hidden px-3 sm:px-6 py-2 bg-red-950/40 border-t border-red-500/60 flex items-center justify-between text-xs z-20 shrink-0">
-    <div class="flex items-center space-x-2.5">
-      <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
-      <span class="text-red-400 font-bold tracking-wider">RECORDING AUDIO (<span id="rec-fx-indicator">NORMAL</span>):</span>
-      <span id="voice-timer" class="text-[#00ff41] font-mono font-bold text-sm">00:00</span>
-    </div>
-    <div class="flex items-center space-x-2">
-      <button type="button" onclick="stopVoiceRecording(false)" class="px-2.5 py-1 rounded border border-red-500/60 text-red-400 hover:bg-red-600 hover:text-black font-bold transition">
-        CANCEL [✕]
-      </button>
-      <button type="button" onclick="stopVoiceRecording(true)" class="px-3 py-1 rounded border border-[#00ff41] bg-[#003b14] text-[#00ff41] hover:bg-[#00ff41] hover:text-black font-bold transition glow-box">
-        SEND VOICE [⏎]
-      </button>
-    </div>
-  </div>
-
-  <!-- Command & Chat Input Footer (With Combined [+ ATTACH] Menu - Option 2) -->
-  <footer class="border-t subtle-border bg-[#020b04] p-2 sm:p-3.5 z-20 shrink-0 relative">
-    <input
-      id="image-input"
-      type="file"
-      accept="image/*"
-      class="hidden"
-      onchange="handleImageSelect(event)"
-    />
-    <input
-      id="file-input"
-      type="file"
-      class="hidden"
-      onchange="handleFileDropSelect(event)"
-    />
-
-    <!-- Popup Menu for [+ ATTACH] -->
-    <div id="attach-menu" class="hidden absolute bottom-16 right-28 sm:right-40 bg-[#020c04] border-2 border-[#00ff41] rounded-lg p-2 space-y-1.5 z-40 glow-box w-48 text-xs">
-      <button type="button" onclick="closeAttachMenu(); triggerImageSelect();" class="w-full flex items-center justify-between px-3 py-2 rounded bg-[#001a07] hover:bg-[#00ff41] hover:text-black font-bold transition">
-        <span>🖼️ SEND PICTURE</span>
-        <span class="text-[10px] opacity-75">[PIC]</span>
-      </button>
-      <button type="button" onclick="closeAttachMenu(); triggerFileSelect();" class="w-full flex items-center justify-between px-3 py-2 rounded bg-[#001a07] hover:bg-[#00ff41] hover:text-black font-bold transition">
-        <span>📁 SEND FILE</span>
-        <span class="text-[10px] opacity-75">[1.5MB]</span>
-      </button>
     </div>
 
-    <form id="chat-form" onsubmit="handleFormSubmit(event)" class="flex items-center space-x-1.5 sm:space-x-2 max-w-6xl mx-auto">
-      <span id="prompt-prefix" class="text-[#00ff41] font-bold text-sm sm:text-base shrink-0 select-none">[&gt;]</span>
-      <div class="relative flex-1 flex items-center">
-        <input
-          id="terminal-input"
-          type="text"
-          autocomplete="off"
-          spellcheck="false"
-          placeholder="Type message, /help, /riddle, or use [+ ATTACH] & [🎙️ VOICE]..."
-          class="w-full bg-transparent text-[#00ff41] focus:outline-none font-mono text-sm sm:text-base pr-2"
-        />
+    <!-- BOTTOM PILL MESSAGE BOX (Compact Icons on Phones, Full Labels on Laptops/Desktops) -->
+    <footer class="px-2.5 sm:px-8 pt-1 z-20 shrink-0 relative safe-bottom-pad">
+      <input
+        id="image-input"
+        type="file"
+        accept="image/*"
+        class="hidden"
+        onchange="handleImageSelect(event)"
+      />
+      <input
+        id="file-input"
+        type="file"
+        class="hidden"
+        onchange="handleFileDropSelect(event)"
+      />
+
+      <!-- Popup Menu for [+ ATTACH] -->
+      <div id="attach-menu" class="hidden absolute bottom-16 sm:bottom-20 right-14 sm:right-44 bg-[#020c04] border-2 border-[#00ff41] rounded-xl p-2 space-y-1.5 z-40 glow-box w-48 text-xs">
+        <button type="button" onclick="closeAttachMenu(); triggerImageSelect();" class="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-[#001a07] hover:bg-[#00ff41] hover:text-black font-bold transition">
+          <span>🖼️ SEND PICTURE</span>
+          <span class="text-[10px] opacity-75">[PIC]</span>
+        </button>
+        <button type="button" onclick="closeAttachMenu(); triggerFileSelect();" class="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-[#001a07] hover:bg-[#00ff41] hover:text-black font-bold transition">
+          <span>📁 SEND FILE</span>
+          <span class="text-[10px] opacity-75">[1.5MB]</span>
+        </button>
       </div>
 
-      <!-- Combined [+ ATTACH] Button (Option 2) -->
-      <button
-        id="attach-btn"
-        type="button"
-        onclick="toggleAttachMenu(event)"
-        title="Attach Picture or Encrypted File Packet"
-        class="px-2.5 sm:px-3 py-1.5 rounded border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-xs tracking-wider transition shrink-0"
-      >
-        [+ ATTACH]
-      </button>
+      <!-- Rounded Pill Message Bar -->
+      <form id="chat-form" onsubmit="handleFormSubmit(event)" class="max-w-4xl mx-auto flex items-center space-x-1.5 sm:space-x-2.5 bg-[#010d04]/95 border-2 border-[#00ff41]/80 rounded-full px-3 sm:px-5 py-2 sm:py-2.5 glow-box">
+        <span id="prompt-prefix" class="text-[#00ff41] font-bold text-sm sm:text-base shrink-0 select-none">[&gt;]</span>
+        <div class="relative flex-1 flex items-center min-w-0">
+          <input
+            id="terminal-input"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="Message box // Type message or /help..."
+            class="w-full bg-transparent text-[#00ff41] focus:outline-none font-mono text-base sm:text-base pr-1"
+          />
+        </div>
 
-      <button
-        id="voice-btn"
-        type="button"
-        onclick="toggleVoiceRecording()"
-        title="Record & Send a Voice Note (Uses active Voice FX)"
-        class="px-2.5 sm:px-3 py-1.5 rounded border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-xs tracking-wider transition shrink-0"
-      >
-        [🎙️ VOICE]
-      </button>
+        <!-- Combined [+ ATTACH] Button: Compact [＋] on phones, [+ ATTACH] on laptops -->
+        <button
+          id="attach-btn"
+          type="button"
+          onclick="toggleAttachMenu(event)"
+          title="Attach Picture or Encrypted File Packet"
+          class="px-2.5 sm:px-3 py-1 rounded-full border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-xs tracking-wider transition shrink-0"
+        >
+          <span class="sm:hidden">＋</span>
+          <span class="hidden sm:inline">+ ATTACH</span>
+        </button>
 
-      <button
-        type="submit"
-        class="px-3 sm:px-4 py-1.5 rounded border border-[#00ff41] bg-[#00290d] hover:bg-[#00ff41] hover:text-black font-bold text-xs sm:text-sm tracking-wider transition shrink-0 glow-box"
-      >
-        SEND [⏎]
-      </button>
-    </form>
-  </footer>
+        <!-- Voice Button: Compact [🎙️] on phones, [🎙️ VOICE] on laptops -->
+        <button
+          id="voice-btn"
+          type="button"
+          onclick="toggleVoiceRecording()"
+          title="Record & Send a Voice Note (Uses active Voice FX)"
+          class="px-2.5 sm:px-3 py-1 rounded-full border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-xs tracking-wider transition shrink-0"
+        >
+          <span id="voice-btn-mobile" class="sm:hidden">🎙️</span>
+          <span id="voice-btn-desktop" class="hidden sm:inline">🎙️ VOICE</span>
+        </button>
+
+        <!-- Send Button: Compact [⏎] on phones, [SEND ⏎] on laptops -->
+        <button
+          type="submit"
+          class="px-3 sm:px-5 py-1 rounded-full border border-[#00ff41] bg-[#002e10] hover:bg-[#00ff41] hover:text-black font-bold text-xs sm:text-sm tracking-wider transition shrink-0 glow-box"
+        >
+          <span class="sm:hidden">⏎</span>
+          <span class="hidden sm:inline">SEND ⏎</span>
+        </button>
+      </form>
+    </footer>
+
+  </div>
 
   <!-- Modal: Site Information & Complete New User Text Tutorial -->
   <div id="info-guide-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-6 z-50" onclick="closeInfoGuideModal()">
-    <div class="bg-[#020c04] border-2 border-[#00ff41] rounded-lg max-w-4xl w-full max-h-[88vh] flex flex-col p-4 sm:p-6 glow-box relative" onclick="event.stopPropagation()">
+    <div class="bg-[#020c04] border-2 border-[#00ff41] rounded-lg max-w-4xl w-full max-h-[88dvh] flex flex-col p-4 sm:p-6 glow-box relative" onclick="event.stopPropagation()">
       <!-- Header -->
       <div class="flex items-center justify-between border-b subtle-border pb-3 mb-4 shrink-0">
         <div class="flex items-center space-x-2.5">
@@ -526,7 +607,7 @@
       </div>
 
       <!-- Tab Switcher inside Info Modal -->
-      <div class="flex space-x-2 border-b subtle-border pb-3 mb-4 shrink-0 text-xs">
+      <div class="flex flex-wrap gap-2 border-b subtle-border pb-3 mb-4 shrink-0 text-xs">
         <button id="tab-btn-tutorial" onclick="switchInfoTab('tutorial')" class="px-3 py-1.5 rounded border border-[#00ff41] bg-[#00ff41] text-black font-bold tracking-wider transition">
           1. NEW USER TUTORIAL (HOW TO USE)
         </button>
@@ -552,39 +633,39 @@
 
           <div class="space-y-3">
             <div class="p-3 rounded border subtle-border bg-black/60">
-              <h4 class="text-[#00ff41] font-bold mb-1">STEP 1: CLAIM YOUR UNIQUE CODENAME (IDENTITY LOGIN)</h4>
+              <h4 class="text-[#00ff41] font-bold mb-1">STEP 1: CLAIM YOUR UNIQUE CODENAME (BOTTOM-LEFT USERNAME DISPLAY)</h4>
               <p class="text-xs">
                 • When you first open the website, the <b>Terminal Identity Login</b> box appears.<br/>
                 • Type any codename (2–18 characters, e.g., <code>NIGHTWING_01</code>) or click a preset.<br/>
                 • Our <b>Live Global Availability Check</b> verifies in real time that nobody else is using your name (<code>✓ AVAILABLE</code>).<br/>
-                • Your browser remembers your codename automatically! To change it later, click <b><code>ID: [YOUR_NAME] ✎</code></b> in the top bar or type <code>/name NEW_NAME</code>.
+                • Your active username is pinned at the <b>bottom-left of the sidebar</b> (`USER: [YOUR_NAME] ✎ EDIT`). Click it anytime to change your codename!
               </p>
             </div>
 
             <div class="p-3 rounded border subtle-border bg-black/60">
               <h4 class="text-[#00ff41] font-bold mb-1">STEP 2: CONNECT WITH A FRIEND OR SECOND DEVICE (6-DIGIT FREQUENCY CODE)</h4>
               <p class="text-xs">
-                Every chat room has a <b>6-Digit Frequency Code</b> shown at the top-left (e.g., <code>FREQ: 7X9K2M</code>). You have 3 easy ways to connect:<br/>
-                • <b>Option A (Enter Code):</b> Click your <code>FREQ</code> badge to copy your 6-digit code and give it to your friend. They click <b><code>JOIN</code></b> at the top-left and type your code.<br/>
-                • <b>Option B (Auto-Join Link):</b> Click <b><code>+ INVITE</code></b> in the top bar, copy the direct URL, and send it to your friend on WhatsApp/Discord.<br/>
-                • <b>Option C (Phone QR Scan):</b> Click <b><code>+ INVITE</code></b> and scan the green QR code with your phone camera to link instantly.
+                Every chat room has a <b>6-Digit Frequency Code</b> shown at the top of the left sidebar (e.g., <code>FREQ CODE: 7X9K2M</code>). You have 3 easy ways to connect:<br/>
+                • <b>Option A (Enter Code):</b> Click your <code>FREQ CODE</code> pill to copy your 6-digit code and give it to your friend. They click <b><code>🔗 JOIN FREQ</code></b> and type your code.<br/>
+                • <b>Option B (Auto-Join Link):</b> Click <b><code>+ INVITE QR</code></b>, copy the direct URL, and send it to your friend on WhatsApp/Discord.<br/>
+                • <b>Option C (Phone QR Scan):</b> Click <b><code>+ INVITE QR</code></b> and scan the green QR code with your phone camera to link instantly.
               </p>
             </div>
 
             <div class="p-3 rounded border subtle-border bg-black/60">
-              <h4 class="text-[#00ff41] font-bold mb-1">STEP 3: SEND TEXT, PHOTOS, FILES &amp; VOICE NOTES</h4>
+              <h4 class="text-[#00ff41] font-bold mb-1">STEP 3: USE THE HIDEABLE LEFT SIDEBAR (ALL FEATURES IN ONE PLACE)</h4>
               <p class="text-xs">
-                • <b>Text Chat:</b> Type in the bottom bar and press <code>Enter</code> or click <b><code>SEND [⏎]</code></b>.<br/>
-                • <b>Attach Pictures &amp; Files (<code>[+ ATTACH]</code>):</b> Click <b><code>[+ ATTACH]</code></b> at the bottom to send a Picture or an Encrypted File Packet (or press <code>Ctrl + V</code> / drag-and-drop any file onto the screen).<br/>
-                • <b>Send Voice Notes (<code>[🎙️ VOICE]</code>):</b> Click <b><code>[🎙️ VOICE]</code></b> to record up to 40 seconds of audio. Open <b><code>⚙️ TOOLKIT</code></b> to switch <b><code>🎙️ Voice Changer FX</code></b> to <code>VENGEANCE</code> to deepen your voice like Batman!
+                • All spy and ARG features live inside the <b>Left Sidebar</b>.<br/>
+                • Want a full-screen distraction-free view? Click the <b><code>◧</code></b> button in the top-right corner of the sidebar to hide it! Click <b><code>◧ FEATURES</code></b> in the top-left of the workspace anytime to bring it back.
               </p>
             </div>
 
             <div class="p-3 rounded border subtle-border bg-black/60">
-              <h4 class="text-[#00ff41] font-bold mb-1">STEP 4: USE THE [⚙️ TOOLKIT] MENU, REPLIES &amp; REACTIONS</h4>
+              <h4 class="text-[#00ff41] font-bold mb-1">STEP 4: SEND TEXT, PHOTOS, FILES &amp; VOICE NOTES</h4>
               <p class="text-xs">
-                • <b>Spy &amp; ARG Toolkit (<code>⚙️ TOOLKIT</code>):</b> Click <b><code>⚙️ TOOLKIT</code></b> in the top-right to access <b>AES-256 Room Encryption</b>, <b>Self-Destructing Timers (10s/30s)</b>, <b>Riddler ARG Challenge</b>, <b>CRT Monitor Colors</b>, and <b>Stealth Mode</b>.<br/>
-                • <b>Reply &amp; React:</b> On any message in the chat log, click <b><code>[↩ REPLY]</code></b> to quote that message, or click any reaction badge (<code>[!]</code>, <code>[?]</code>, <code>[🦇]</code>, <code>[💀]</code>) to add a live counter!
+                • <b>Text Chat:</b> Type in the bottom pill-shaped message box and press <code>Enter</code> or click <b><code>SEND ⏎</code></b>.<br/>
+                • <b>Attach Pictures &amp; Files (<code>+ ATTACH</code>):</b> Click <b><code>+ ATTACH</code></b> in the message box to send a Picture or an Encrypted File Packet (or press <code>Ctrl + V</code> / drag-and-drop any file onto the screen).<br/>
+                • <b>Send Voice Notes (<code>🎙️ VOICE</code>):</b> Click <b><code>🎙️ VOICE</code></b> to record up to 40 seconds of audio. Toggle <b><code>🎙️ Voice Changer FX</code></b> in the sidebar to <code>VENGEANCE</code> to deepen your voice like Batman!
               </p>
             </div>
 
@@ -609,35 +690,35 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="p-3 rounded border subtle-border bg-black/60">
               <h4 class="text-[#00ff41] font-bold">1. ⏱️ Self-Destructing Messages (TTL)</h4>
-              <p class="text-xs mt-1">Open <code>⚙️ TOOLKIT</code> and toggle <code>⏱️ Self-Destruct (10s / 30s)</code>. Messages display a live countdown timer and dissolve into static on all devices when time expires.</p>
+              <p class="text-xs mt-1">In the left sidebar, toggle <code>⏱️ Self-Destruct (10s / 30s)</code>. Messages display a live countdown timer and dissolve into static on all devices when time expires.</p>
             </div>
             <div class="p-3 rounded border subtle-border bg-black/60">
               <h4 class="text-[#00ff41] font-bold">2. 🕵️ Boss Key / Panic Stealth Mode</h4>
-              <p class="text-xs mt-1">Press the <code>~</code> (Backquote) key or click <code>🕵️ STEALTH</code> inside <code>⚙️ TOOLKIT</code> to instantly disguise the chat as a Linux Kernel Compiler terminal.</p>
+              <p class="text-xs mt-1">Press the <code>~</code> (Backquote) key or click <code>🕵️ STEALTH</code> in the left sidebar to instantly disguise the chat as a Linux Kernel Compiler terminal.</p>
             </div>
             <div class="p-3 rounded border subtle-border bg-black/60">
               <h4 class="text-[#00ff41] font-bold">3. 🔐 AES-256 Room Passphrase Lock</h4>
-              <p class="text-xs mt-1">Click <code>🔐 AES-256 Room Key</code> inside <code>⚙️ TOOLKIT</code> to set a secret room password. Uses Web Crypto API (PBKDF2 + AES-GCM) so nobody without the key can read messages.</p>
+              <p class="text-xs mt-1">Click <code>🔐 AES-256 Room Key</code> in the left sidebar to set a secret room password. Uses Web Crypto API (PBKDF2 + AES-GCM) so nobody without the key can read messages.</p>
             </div>
             <div class="p-3 rounded border subtle-border bg-black/60">
               <h4 class="text-[#00ff41] font-bold">4. ❓ Interactive Riddler ARG Minigame</h4>
-              <p class="text-xs mt-1">Click <code>❓ Riddler ARG Challenge</code> in <code>⚙️ TOOLKIT</code> or type <code>/riddle</code> to solve 3 canonical riddles from <i>The Batman</i> and unlock the <code>[🦇 GCPD_VERIFIED]</code> badge.</p>
+              <p class="text-xs mt-1">Click <code>❓ Riddler ARG Challenge</code> in the sidebar or type <code>/riddle</code> to solve 3 canonical riddles from <i>The Batman</i> and unlock the <code>[🦇 GCPD_VERIFIED]</code> badge.</p>
             </div>
             <div class="p-3 rounded border subtle-border bg-black/60">
               <h4 class="text-[#00ff41] font-bold">5. 🎙️ Bat-Vocoder Voice Changer FX</h4>
-              <p class="text-xs mt-1">In <code>⚙️ TOOLKIT</code>, cycle <code>🎙️ Voice Changer FX</code> between <code>NORMAL</code>, <code>VENGEANCE</code> (deep Batman pitch modulator), and <code>ROGUE</code> (anonymous pitch).</p>
+              <p class="text-xs mt-1">In the sidebar, cycle <code>🎙️ Voice Changer FX</code> between <code>NORMAL</code>, <code>VENGEANCE</code> (deep Batman pitch modulator), and <code>ROGUE</code> (anonymous pitch).</p>
             </div>
             <div class="p-3 rounded border subtle-border bg-black/60">
               <h4 class="text-[#00ff41] font-bold">6. 🖥️ CRT Phosphor Theme Switcher</h4>
-              <p class="text-xs mt-1">In <code>⚙️ TOOLKIT</code>, switch <code>🖥️ CRT Monitor Theme</code> between Classic Riddler Green, The Batman Crimson Red, Batcomputer Tactical Amber, and Wayne Cyan.</p>
+              <p class="text-xs mt-1">Switch <code>🖥️ CRT Monitor Theme</code> (or click <code>◐</code> in the top-right) between Classic Riddler Green, The Batman Crimson Red, Batcomputer Tactical Amber, and Wayne Cyan.</p>
             </div>
             <div class="p-3 rounded border subtle-border bg-black/60">
-              <h4 class="text-[#00ff41] font-bold">7. 👥 Live Connected Nodes Drawer</h4>
-              <p class="text-xs mt-1">Click the <code>🟢 X ONLINE</code> badge in the top bar to see everyone in your room. The Owner (<code>[★ BATMAN]</code>) gets one-click KICK and MUTE buttons.</p>
+              <h4 class="text-[#00ff41] font-bold">7. 👥 Live Connected Nodes List</h4>
+              <p class="text-xs mt-1">Click <code>🟢 X ONLINE</code> in the left sidebar to see everyone in your room. The Owner (<code>[★ BATMAN]</code>) gets one-click KICK and MUTE buttons.</p>
             </div>
             <div class="p-3 rounded border subtle-border bg-black/60">
               <h4 class="text-[#00ff41] font-bold">8. 📁 Combined [+ ATTACH] Media &amp; File Drop</h4>
-              <p class="text-xs mt-1">Click <code>[+ ATTACH]</code> at the bottom or drag-and-drop any photo/file onto the terminal to transmit images, documents, or archives directly to peers.</p>
+              <p class="text-xs mt-1">Click <code>+ ATTACH</code> in the bottom message bar or drag-and-drop any photo/file onto the terminal to transmit images, documents, or archives directly to peers.</p>
             </div>
             <div class="p-3 rounded border subtle-border bg-black/60">
               <h4 class="text-[#00ff41] font-bold">9. ↩ Direct Replies &amp; ASCII Reactions</h4>
@@ -730,8 +811,8 @@
 
       <!-- Footer -->
       <div class="border-t subtle-border pt-3 mt-4 flex items-center justify-between text-xs shrink-0">
-        <span class="text-emerald-500/80">TIP: You can reopen this guide anytime by clicking <b>📖 GUIDE</b> at the top.</span>
-        <button onclick="closeInfoGuideModal()" class="px-4 py-1.5 rounded border border-[#00ff41] bg-[#00ff41] text-black font-bold tracking-wider hover:bg-emerald-300 transition">
+        <span class="text-emerald-500/80 hidden sm:inline">TIP: You can reopen this guide anytime by clicking <b>📖 GUIDE</b> in the top-right corner.</span>
+        <button onclick="closeInfoGuideModal()" class="ml-auto px-4 py-1.5 rounded border border-[#00ff41] bg-[#00ff41] text-black font-bold tracking-wider hover:bg-emerald-300 transition">
           ENTER TERMINAL [⏎]
         </button>
       </div>
@@ -799,7 +880,7 @@
           type="password"
           autocomplete="off"
           placeholder="ENTER ROOM PASSPHRASE (OR LEAVE BLANK)"
-          class="w-full bg-black border-2 border-[#00ff41] px-3 py-2.5 rounded text-center text-sm font-bold tracking-widest text-[#00ff41] focus:outline-none"
+          class="w-full bg-black border-2 border-[#00ff41] px-3 py-2.5 rounded text-center text-base font-bold tracking-widest text-[#00ff41] focus:outline-none"
         />
         <div class="flex justify-end space-x-2">
           <button type="button" onclick="clearE2eePassphrase()" class="px-3 py-1.5 rounded border border-red-500/60 text-red-400 text-xs hover:bg-red-950/40">
@@ -944,7 +1025,7 @@
           type="text"
           autocomplete="off"
           placeholder="ENTER SITE-WIDE ALERT MESSAGE..."
-          class="w-full bg-black border-2 border-red-500 px-3 py-2.5 rounded text-sm font-bold tracking-wider text-red-300 uppercase focus:outline-none"
+          class="w-full bg-black border-2 border-red-500 px-3 py-2.5 rounded text-base font-bold tracking-wider text-red-300 uppercase focus:outline-none"
         />
         <div class="flex items-center justify-between text-[11px] text-red-300/80">
           <label class="flex items-center space-x-2 cursor-pointer">
@@ -976,8 +1057,8 @@
           <button onclick="closeImageModal()" class="text-emerald-400 hover:text-white px-2 py-0.5 border subtle-border rounded text-xs">ESC</button>
         </div>
       </div>
-      <div class="flex items-center justify-center bg-black/80 rounded border subtle-border p-2 max-h-[75vh] overflow-auto">
-        <img id="image-modal-preview" src="" alt="Full Preview" class="max-h-[70vh] w-auto object-contain rounded" />
+      <div class="flex items-center justify-center bg-black/80 rounded border subtle-border p-2 max-h-[75dvh] overflow-auto">
+        <img id="image-modal-preview" src="" alt="Full Preview" class="max-h-[70dvh] w-auto object-contain rounded" />
       </div>
     </div>
   </div>
@@ -1010,7 +1091,7 @@
   </div>
 
   <!-- Toast Notification -->
-  <div id="toast" class="fixed bottom-16 left-1/2 -translate-x-1/2 bg-[#002b0f] border-2 border-[#00ff41] text-[#00ff41] px-4 py-1.5 rounded text-xs font-bold tracking-widest hidden z-50 glow-box"></div>
+  <div id="toast" class="fixed bottom-20 left-1/2 -translate-x-1/2 bg-[#002b0f] border-2 border-[#00ff41] text-[#00ff41] px-4 py-1.5 rounded-full text-xs font-bold tracking-widest hidden z-50 glow-box"></div>
 
   <!-- Modal: Share Link & Frequency Code -->
   <div id="share-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm hidden items-center justify-center p-4 z-50" onclick="closeShareModal()">
@@ -1026,7 +1107,7 @@
       <div class="space-y-4 text-xs sm:text-sm">
         <div class="p-3 rounded bg-[#001c08] border subtle-border">
           <p class="text-emerald-400 font-bold mb-1">METHOD 1: 6-DIGIT FREQUENCY CODE</p>
-          <p class="text-emerald-200/80 text-xs mb-2">Open your site on the other device, click <b>JOIN</b>, and enter:</p>
+          <p class="text-emerald-200/80 text-xs mb-2">Open your site on the other device, click <b>JOIN FREQ</b>, and enter:</p>
           <div class="flex items-center justify-between bg-black border border-[#00ff41] px-3 py-2 rounded">
             <span id="modal-freq-code" class="text-xl font-bold tracking-[0.25em] text-[#00ff41]">------</span>
             <button onclick="copyFreqCode()" class="px-2.5 py-1 bg-[#003b14] hover:bg-[#00ff41] hover:text-black text-xs font-bold rounded transition">
@@ -1169,7 +1250,7 @@
     let isRoomLocked = false;
     let mutedUsers = new Set();
 
-    // v6.1 Feature States
+    // v7.0 Feature States
     let ttlSeconds = 0; // 0 = OFF, 10 = 10s, 30 = 30s
     let voiceFxMode = 'NORMAL'; // NORMAL, VENGEANCE, ROGUE
     let crtThemes = ['GREEN', 'RED', 'AMBER', 'CYAN'];
@@ -1179,6 +1260,7 @@
     let e2eePassphraseSet = false;
     let riddleLevel = 0;
     let riddlesCompleted = false;
+    let isSidebarCollapsed = false;
 
     const RIDDLE_CHALLENGES = [
       {
@@ -1246,29 +1328,88 @@
 
     const RIDDLER_RESPONSES = [
       '<?> IF YOU ARE JUSTICE, PLEASE DO NOT LIE. WHAT IS THE PRICE FOR YOUR BLIND EYE?',
-      '<?> THE TRUTH HAS BEEN HIDDEN IN THE DARK. CLICK "+ INVITE" TO LINK ANOTHER DEVICE.',
-      '<?> NO MORE LIES. OPEN "⚙️ TOOLKIT" TO SET AN AES-256 KEY OR PLAY THE RIDDLER CHALLENGE.',
+      '<?> THE TRUTH HAS BEEN HIDDEN IN THE DARK. CLICK "+ INVITE QR" IN THE SIDEBAR TO LINK ANOTHER DEVICE.',
+      '<?> NO MORE LIES. USE THE LEFT SIDEBAR TO SET AN AES-256 KEY OR PLAY THE RIDDLER CHALLENGE.',
       '<?> HE LIES STILL. TYPE "/riddle" TO TEST YOUR INTELLECT AND UNLOCK YOUR GCPD BADGE.',
-      '<?> YOU ARE PART OF THIS TOO. CLICK "[+ ATTACH]" TO SEND ENCRYPTED PICTURES OR FILES.'
+      '<?> YOU ARE PART OF THIS TOO. CLICK "+ ATTACH" BELOW TO SEND ENCRYPTED PICTURES OR FILES.'
     ];
     let riddlerIdx = 0;
 
     const outputEl = document.getElementById('terminal-output');
+    const workspaceScrollEl = document.getElementById('workspace-scroll');
     const inputEl = document.getElementById('terminal-input');
 
     // ==========================================
-    // UI DRAWERS, MENUS & INFO GUIDE MODAL
+    // HIDEABLE LEFT SIDEBAR & MOBILE HELPERS
     // ==========================================
-    function toggleToolkitDrawer() {
+    function closeMobileSidebarIfOpen() {
+      if (window.innerWidth < 768 && !isSidebarCollapsed) {
+        toggleLeftSidebar();
+      }
+    }
+
+    function toggleLeftSidebar() {
       initAudio();
       playBeep(760, 0.04);
-      const toolkitDrawer = document.getElementById('toolkit-drawer');
-      const nodesDrawer = document.getElementById('nodes-drawer');
-      if (nodesDrawer && !nodesDrawer.classList.contains('hidden')) {
-        nodesDrawer.classList.add('hidden');
+      const sidebar = document.getElementById('left-sidebar');
+      const openBtn = document.getElementById('open-sidebar-btn');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      if (!sidebar) return;
+
+      isSidebarCollapsed = !isSidebarCollapsed;
+      if (isSidebarCollapsed) {
+        sidebar.classList.add('hidden');
+        if (openBtn) openBtn.classList.remove('hidden');
+        if (backdrop) backdrop.classList.add('hidden');
+      } else {
+        sidebar.classList.remove('hidden');
+        if (openBtn) openBtn.classList.add('hidden');
+        if (window.innerWidth < 768 && backdrop) {
+          backdrop.classList.remove('hidden');
+        }
       }
-      if (toolkitDrawer) {
-        toolkitDrawer.classList.toggle('hidden');
+    }
+
+    function toggleToolkitDrawer() {
+      toggleLeftSidebar();
+    }
+
+    function toggleSidebarNodesList() {
+      initAudio();
+      playBeep(760, 0.04);
+      const listEl = document.getElementById('nodes-list');
+      if (listEl) {
+        listEl.classList.toggle('hidden');
+        renderNodesDrawerList();
+      }
+    }
+
+    function openSidebarAndShowNodes() {
+      if (isSidebarCollapsed) {
+        toggleLeftSidebar();
+      }
+      const listEl = document.getElementById('nodes-list');
+      if (listEl && listEl.classList.contains('hidden')) {
+        listEl.classList.remove('hidden');
+      }
+      renderNodesDrawerList();
+    }
+
+    function updateHeroUsernameDisplay() {
+      const heroUserEl = document.getElementById('hero-username-display');
+      if (heroUserEl) {
+        heroUserEl.textContent = myHandle;
+        heroUserEl.className = isOperator
+          ? 'text-yellow-400 underline decoration-yellow-400/70'
+          : 'text-[#00ff41] underline decoration-[#00ff41]/60';
+      }
+    }
+
+    function compactHeroCardOnMessage() {
+      const wrapper = document.getElementById('welcome-hero-wrapper');
+      if (wrapper && wrapper.classList.contains('my-auto')) {
+        wrapper.classList.remove('my-auto', 'py-4', 'sm:py-6');
+        wrapper.classList.add('py-2');
       }
     }
 
@@ -1307,6 +1448,7 @@
     });
 
     function openInfoGuideModal(initialTab = 'tutorial') {
+      closeMobileSidebarIfOpen();
       initAudio();
       playBeep(820, 0.05);
       const modal = document.getElementById('info-guide-modal');
@@ -1487,6 +1629,7 @@
     // FEATURE #3: AES-256 E2EE ROOM PASSPHRASE
     // ==========================================
     function openE2eeModal() {
+      closeMobileSidebarIfOpen();
       initAudio();
       playBeep(780, 0.05);
       const modal = document.getElementById('e2ee-modal');
@@ -1586,6 +1729,7 @@
     // FEATURE #4: RIDDLER PUZZLE MINIGAME (/riddle)
     // ==========================================
     function openRiddleModal() {
+      closeMobileSidebarIfOpen();
       initAudio();
       playBeep(740, 0.06);
       updateRiddleUI();
@@ -1683,19 +1827,8 @@
     }
 
     // ==========================================
-    // FEATURE #7: LIVE CONNECTED NODES DRAWER
+    // FEATURE #7: LIVE CONNECTED NODES LIST
     // ==========================================
-    function toggleNodesDrawer() {
-      playBeep(760, 0.04);
-      const drawer = document.getElementById('nodes-drawer');
-      const toolkitDrawer = document.getElementById('toolkit-drawer');
-      if (toolkitDrawer && !toolkitDrawer.classList.contains('hidden')) {
-        toolkitDrawer.classList.add('hidden');
-      }
-      drawer.classList.toggle('hidden');
-      renderNodesDrawerList();
-    }
-
     function renderNodesDrawerList() {
       const listEl = document.getElementById('nodes-list');
       if (!listEl) return;
@@ -1715,8 +1848,8 @@
 
       if (remotePeers.size === 0) {
         const empty = document.createElement('div');
-        empty.className = 'text-emerald-500/70 italic text-[11px] p-2';
-        empty.textContent = 'No other peer nodes on this frequency yet. Click + INVITE to link another device.';
+        empty.className = 'text-emerald-500/70 italic text-[11px] p-1.5';
+        empty.textContent = 'No other peer nodes on this frequency yet.';
         listEl.appendChild(empty);
         return;
       }
@@ -1849,8 +1982,9 @@
     }
 
     function renderFileMessage({ msgId, handle, fileName, fileSize, fileData, isOperatorMsg, timestamp, isSelf, ttl }) {
+      compactHeroCardOnMessage();
       const row = document.createElement('div');
-      row.className = `p-2.5 rounded border ${
+      row.className = `p-2.5 rounded-xl border ${
         isSelf
           ? (isOperator ? 'border-yellow-500/70 bg-[#141200]/80 operator-glow' : 'border-emerald-800/60 bg-[#021206]/70')
           : isOperatorMsg
@@ -1869,7 +2003,7 @@
 
       const kb = Math.max(1, Math.round((fileSize || 1024) / 1024));
       const box = document.createElement('div');
-      box.className = 'flex items-center justify-between bg-black/80 border border-[#00ff41]/50 px-3 py-2 rounded text-xs';
+      box.className = 'flex items-center justify-between bg-black/80 border border-[#00ff41]/50 px-3 py-2 rounded-lg text-xs';
       box.innerHTML = `
         <div class="truncate pr-3">
           <div class="font-bold text-[#00ff41] truncate">📁 ${fileName || 'encrypted_packet.bin'}</div>
@@ -2222,7 +2356,8 @@
         myHandle = `[${finalName}]`;
         const handleEl = document.getElementById('handle-display');
         handleEl.textContent = myHandle;
-        handleEl.className = 'font-bold underline';
+        handleEl.className = 'font-bold tracking-wider truncate underline';
+        updateHeroUsernameDisplay();
       }
 
       if (fromCloud) {
@@ -2234,6 +2369,7 @@
     };
 
     function openUsernameModal(isInitialLogin = false) {
+      closeMobileSidebarIfOpen();
       initAudio();
       playBeep(760, 0.05);
 
@@ -2317,7 +2453,8 @@
         myHandle = `[${clean}]`;
         const handleEl = document.getElementById('handle-display');
         handleEl.textContent = myHandle;
-        handleEl.className = 'font-bold underline';
+        handleEl.className = 'font-bold tracking-wider truncate underline';
+        updateHeroUsernameDisplay();
       }
 
       closeUsernameModal();
@@ -2414,8 +2551,6 @@
     function toggleRiddlerBot() {
       const states = ['AUTO', 'ON', 'OFF'];
       botMode = states[(states.indexOf(botMode) + 1) % states.length];
-      const nodesLabel = document.getElementById('bot-label');
-      if (nodesLabel) nodesLabel.textContent = botMode;
       const toolkitLabel = document.getElementById('toolkit-bot-label');
       if (toolkitLabel) toolkitLabel.textContent = botMode;
       playBeep(760, 0.05);
@@ -2450,6 +2585,7 @@
     }
 
     function openOpAuthModal() {
+      closeMobileSidebarIfOpen();
       initAudio();
       playBeep(780, 0.05);
       const modal = document.getElementById('op-auth-modal');
@@ -2499,7 +2635,7 @@
         activateOperatorMode(true);
       } else {
         playBeep(180, 0.3, 'sawtooth');
-        appendSystemLine(`[SECURITY ALERT] Invalid Owner Key. Click the "[?]" logo or open "⚙️ TOOLKIT" to use the secure login box.`, 'danger');
+        appendSystemLine(`[SECURITY ALERT] Invalid Owner Key. Click the "[?]" logo or "★ Operator Login" in the sidebar.`, 'danger');
       }
     }
 
@@ -2509,7 +2645,8 @@
       myHandle = OWNER_FIXED_HANDLE;
       const handleEl = document.getElementById('handle-display');
       handleEl.textContent = myHandle;
-      handleEl.className = 'font-bold underline text-yellow-400';
+      handleEl.className = 'font-bold tracking-wider truncate underline text-yellow-400';
+      updateHeroUsernameDisplay();
       document.getElementById('owner-control-bar').classList.remove('hidden');
       renderNodesDrawerList();
 
@@ -2540,7 +2677,8 @@
       myHandle = `[${fallback}]`;
       const handleEl = document.getElementById('handle-display');
       handleEl.textContent = myHandle;
-      handleEl.className = 'font-bold underline';
+      handleEl.className = 'font-bold tracking-wider truncate underline';
+      updateHeroUsernameDisplay();
       document.getElementById('owner-control-bar').classList.add('hidden');
       renderNodesDrawerList();
       playBeep(300, 0.15);
@@ -2616,6 +2754,9 @@
       const upperCode = roomId.toUpperCase();
       document.getElementById('room-display-id').textContent = upperCode;
       document.getElementById('modal-freq-code').textContent = upperCode;
+      const heroFreqEl = document.getElementById('hero-freq-label');
+      if (heroFreqEl) heroFreqEl.textContent = upperCode;
+
       const shareUrl = getShareUrl();
       document.getElementById('share-url-input').value = shareUrl;
       document.getElementById('qr-image').src =
@@ -2986,6 +3127,7 @@
 
     function openBroadcastModal() {
       if (!isOperator) return;
+      closeMobileSidebarIfOpen();
       playBeep(760, 0.05);
       const modal = document.getElementById('broadcast-modal');
       const inp = document.getElementById('broadcast-modal-input');
@@ -3110,7 +3252,7 @@
             displayText = decrypted;
             displayPlain = decrypted;
           } else {
-            displayText = `🔒 [AES-256 ENCRYPTED PACKET // OPEN '⚙️ TOOLKIT' -> '🔐 AES-256 Room Key' TO UNLOCK]`;
+            displayText = `🔒 [AES-256 ENCRYPTED PACKET // CLICK '🔐 AES-256 Room Key' IN SIDEBAR TO UNLOCK]`;
           }
         }
 
@@ -3213,11 +3355,11 @@
 
       if (totalConns > 0) {
         dot.className = 'w-2 h-2 rounded-full bg-[#00ff41]';
-        badge.className = 'cursor-pointer flex items-center space-x-1.5 px-2.5 py-1 rounded border border-[#00ff41]/50 bg-[#00220c] text-[#00ff41] text-xs hover:bg-[#003311] transition';
+        badge.className = 'w-full flex items-center justify-between px-3 py-2 rounded-lg border border-[#00ff41]/50 bg-[#00200b] text-[#00ff41] hover:bg-[#003311] transition';
         text.textContent = `${remotePeers.size + 1} ONLINE`;
       } else {
         dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
-        badge.className = 'cursor-pointer flex items-center space-x-1.5 px-2.5 py-1 rounded border border-amber-500/50 bg-amber-950/30 text-amber-400 text-xs hover:bg-[#002b0f] transition';
+        badge.className = 'w-full flex items-center justify-between px-3 py-2 rounded-lg border border-amber-500/50 bg-amber-950/20 text-amber-400 hover:bg-[#00240b] transition';
         text.textContent = `SCANNING...`;
       }
     }
@@ -3252,15 +3394,16 @@
       if (style === 'danger') colorClass = 'text-red-500 font-bold';
       if (style === 'dim') colorClass = 'text-emerald-600 text-xs';
 
-      div.className = `${colorClass} font-mono break-words`;
+      div.className = `${colorClass} font-mono break-words text-center sm:text-left`;
       div.textContent = text;
       outputEl.appendChild(div);
       scrollToBottom();
     }
 
     function renderChatMessage({ msgId, handle, text, plainText, isCipher, isOperatorMsg, timestamp, isSelf, isBot = false, ttl = 0, replyTo = null, verifiedBadge = false }) {
+      compactHeroCardOnMessage();
       const row = document.createElement('div');
-      row.className = `p-2.5 rounded border ${
+      row.className = `p-3 rounded-xl border ${
         isSelf
           ? (isOperator ? 'border-yellow-500/70 bg-[#141200]/80 operator-glow' : 'border-emerald-800/60 bg-[#021206]/70')
           : isOperatorMsg
@@ -3430,8 +3573,9 @@
     }
 
     function renderImageMessage({ msgId, handle, imageData, isOperatorMsg, timestamp, isSelf, ttl }) {
+      compactHeroCardOnMessage();
       const row = document.createElement('div');
-      row.className = `p-2.5 rounded border ${
+      row.className = `p-3 rounded-xl border ${
         isSelf
           ? (isOperator ? 'border-yellow-500/70 bg-[#141200]/80 operator-glow' : 'border-emerald-800/60 bg-[#021206]/70')
           : isOperatorMsg
@@ -3449,7 +3593,7 @@
       `;
 
       const imgWrap = document.createElement('div');
-      imgWrap.className = 'relative inline-block group cursor-pointer rounded overflow-hidden border border-[#00ff41]/50 bg-black';
+      imgWrap.className = 'relative inline-block group cursor-pointer rounded-lg overflow-hidden border border-[#00ff41]/50 bg-black';
       imgWrap.onclick = () => openImageModal(imageData, handle);
 
       const imgEl = document.createElement('img');
@@ -3591,7 +3735,10 @@
 
         document.getElementById('voice-rec-bar').classList.remove('hidden');
         const voiceBtn = document.getElementById('voice-btn');
-        voiceBtn.textContent = '[STOP & SEND]';
+        const voiceBtnMob = document.getElementById('voice-btn-mobile');
+        const voiceBtnDesk = document.getElementById('voice-btn-desktop');
+        if (voiceBtnMob) voiceBtnMob.textContent = '⏹️';
+        if (voiceBtnDesk) voiceBtnDesk.textContent = 'STOP & SEND';
         voiceBtn.classList.add('border-red-500', 'bg-red-950/60', 'text-red-300');
 
         const timerEl = document.getElementById('voice-timer');
@@ -3619,7 +3766,10 @@
 
       document.getElementById('voice-rec-bar').classList.add('hidden');
       const voiceBtn = document.getElementById('voice-btn');
-      voiceBtn.textContent = '[🎙️ VOICE]';
+      const voiceBtnMob = document.getElementById('voice-btn-mobile');
+      const voiceBtnDesk = document.getElementById('voice-btn-desktop');
+      if (voiceBtnMob) voiceBtnMob.textContent = '🎙️';
+      if (voiceBtnDesk) voiceBtnDesk.textContent = '🎙️ VOICE';
       voiceBtn.classList.remove('border-red-500', 'bg-red-950/60', 'text-red-300');
 
       try {
@@ -3628,8 +3778,9 @@
     }
 
     function renderVoiceMessage({ msgId, handle, audioData, duration, voiceFx = 'NORMAL', isOperatorMsg, timestamp, isSelf, ttl }) {
+      compactHeroCardOnMessage();
       const row = document.createElement('div');
-      row.className = `p-2.5 rounded border ${
+      row.className = `p-3 rounded-xl border ${
         isSelf
           ? (isOperator ? 'border-yellow-500/70 bg-[#141200]/80 operator-glow' : 'border-emerald-800/60 bg-[#021206]/70')
           : isOperatorMsg
@@ -3670,7 +3821,7 @@
       applyVoiceFxSettings();
 
       const playerBox = document.createElement('div');
-      playerBox.className = 'flex flex-wrap items-center gap-2.5 bg-black/70 border border-[#00ff41]/40 px-3 py-2 rounded';
+      playerBox.className = 'flex flex-wrap items-center gap-2.5 bg-black/70 border border-[#00ff41]/40 px-3 py-2 rounded-lg';
 
       const playBtn = document.createElement('button');
       playBtn.type = 'button';
@@ -3862,13 +4013,13 @@
           let reply = '';
 
           if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
-            reply = "<?> GREETINGS FROM THE SHADOWS. YOU ARE CURRENTLY SOLO ON THIS FREQUENCY. CLICK '+ INVITE' TO LINK A FRIEND OR TYPE '/riddle' TO PLAY.";
+            reply = "<?> GREETINGS FROM THE SHADOWS. YOU ARE CURRENTLY SOLO ON THIS FREQUENCY. CLICK '+ INVITE FRIEND' OR TYPE '/riddle' TO PLAY.";
           } else if (lower.includes('batman') || lower.includes('vengeance') || lower.includes('bruce')) {
             reply = "<?> VENGEANCE IS WATCHING. ONLY THE VERIFIED OWNER CAN UNLOCK THE [★ BATMAN] IDENTITY.";
           } else if (lower.includes('riddle') || lower.includes('puzzle') || lower.includes('game')) {
-            reply = "<?> READY FOR A GAME? CLICK '⚙️ TOOLKIT' -> '❓ Riddler ARG Challenge' (OR TYPE '/riddle') TO UNLOCK YOUR [🦇 GCPD_VERIFIED] BADGE.";
+            reply = "<?> READY FOR A GAME? CLICK '❓ Riddler ARG Challenge' IN THE LEFT SIDEBAR (OR TYPE '/riddle') TO UNLOCK YOUR [🦇 GCPD_VERIFIED] BADGE.";
           } else if (lower.includes('who are you') || lower.includes('what is this')) {
-            reply = "<?> I AM THE RATAALADA AUTO-RESPONDER BOT. YOU CAN SET ME TO 'AUTO', 'ON', OR 'OFF' INSIDE '⚙️ TOOLKIT' -> '🤖 Riddler AI Responder'.";
+            reply = "<?> I AM THE RATAALADA AUTO-RESPONDER BOT. YOU CAN SET ME TO 'AUTO', 'ON', OR 'OFF' IN THE LEFT SIDEBAR.";
           } else {
             reply = RIDDLER_RESPONSES[riddlerIdx % RIDDLER_RESPONSES.length];
             riddlerIdx++;
@@ -3913,7 +4064,8 @@
           break;
 
         case '/toolkit':
-          toggleToolkitDrawer();
+        case '/sidebar':
+          toggleLeftSidebar();
           break;
 
         case '/riddle':
@@ -3988,10 +4140,10 @@
           break;
 
         case '/help':
-          appendSystemLine(`=== RATAALADA-CHAT v6.1 COMMANDS ===`, 'highlight');
+          appendSystemLine(`=== RATAALADA-CHAT v7.0 COMMANDS ===`, 'highlight');
           appendSystemLine(`/guide         - Open Complete Site Info & New User Tutorial`);
           appendSystemLine(`/audit         - Run Live AES-256 Crypto & Security Audit`);
-          appendSystemLine(`/toolkit       - Open Spy & ARG Toolkit Drawer`);
+          appendSystemLine(`/sidebar       - Toggle Hideable Left Sidebar`);
           appendSystemLine(`/riddle        - Play Interactive Riddler ARG Minigame`);
           appendSystemLine(`/ttl           - Cycle Self-Destruct Timer (OFF / 10s / 30s)`);
           appendSystemLine(`/key [pass]    - Set AES-256 E2EE Room Passphrase`);
@@ -4059,6 +4211,7 @@
             writeUsernameCookie(clean);
             myHandle = `[${clean}]`;
             document.getElementById('handle-display').textContent = myHandle;
+            updateHeroUsernameDisplay();
             sendPacket({ type: 'RENAME_NOTICE', oldHandle, handle: myHandle, isOperator });
             broadcastPresence('PRESENCE_PING');
           }
@@ -4116,6 +4269,7 @@
     }
 
     function openShareModal() {
+      closeMobileSidebarIfOpen();
       playBeep(880, 0.05);
       document.getElementById('share-modal').classList.remove('hidden');
       document.getElementById('share-modal').classList.add('flex');
@@ -4127,6 +4281,7 @@
     }
 
     function openJoinModal() {
+      closeMobileSidebarIfOpen();
       playBeep(880, 0.05);
       document.getElementById('join-modal').classList.remove('hidden');
       document.getElementById('join-modal').classList.add('flex');
@@ -4195,11 +4350,13 @@
     }
 
     function scrollToBottom() {
-      outputEl.scrollTop = outputEl.scrollHeight;
+      if (workspaceScrollEl) {
+        workspaceScrollEl.scrollTop = workspaceScrollEl.scrollHeight;
+      }
     }
 
     function focusInput() {
-      if (window.getSelection().toString().length === 0) {
+      if (window.innerWidth >= 768 && window.getSelection().toString().length === 0) {
         inputEl.focus();
       }
     }
@@ -4234,28 +4391,23 @@
         myHandle = HANDLES[0];
       }
       document.getElementById('handle-display').textContent = myHandle;
+      updateHeroUsernameDisplay();
+
+      // Auto-collapse sidebar on narrow mobile screens so workspace is clear
+      if (window.innerWidth < 768) {
+        isSidebarCollapsed = true;
+        document.getElementById('left-sidebar').classList.add('hidden');
+        document.getElementById('open-sidebar-btn').classList.remove('hidden');
+      }
 
       const initialRoom = extractRoomFromUrl();
       setRoomFrequency(initialRoom, true);
 
-      const bootLines = [
-        `> INITIALIZING RATAALADA-CHAT SEC_MESH v6.1... [OK]`,
-        `> ACTIVE FREQUENCY CODE: [ ${roomId.toUpperCase()} ]`,
-        `> CLICK [📖 GUIDE] FOR TUTORIAL OR [⚙️ TOOLKIT] FOR SPY GADGETS.`,
-        savedCustomUsername
-          ? `> WELCOME BACK, ${myHandle}.`
-          : `> [ ? ] TERMINAL READY. PLEASE LOG IN WITH YOUR CODENAME.`
-      ];
-
-      bootLines.forEach((line, idx) => {
-        setTimeout(() => {
-          appendSystemLine(line, idx === bootLines.length - 1 ? 'highlight' : 'dim');
-        }, idx * 110);
-      });
+      appendSystemLine(`> SEC_MESH v7.0 ONLINE // CLICK [◧] TO HIDE SIDEBAR OR [📖 GUIDE] FOR MANUAL.`, 'dim');
 
       if (!savedCustomUsername) {
         setTimeout(() => openUsernameModal(true), 350);
-      } else {
+      } else if (window.innerWidth >= 768) {
         inputEl.focus();
       }
     };
