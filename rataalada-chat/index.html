@@ -512,8 +512,8 @@
       </div>
     </div>
 
-    <!-- BOTTOM PILL MESSAGE BOX (Compact Icons on Phones, Full Labels on Laptops/Desktops) -->
-    <footer class="px-2.5 sm:px-8 pt-1 z-20 shrink-0 relative safe-bottom-pad">
+    <!-- BOTTOM PILL MESSAGE BOX (Visible Text Labels: + ATTACH, VOICE, SEND) -->
+    <footer class="px-2 sm:px-8 pt-1 z-20 shrink-0 relative safe-bottom-pad">
       <input
         id="image-input"
         type="file"
@@ -529,7 +529,7 @@
       />
 
       <!-- Popup Menu for [+ ATTACH] -->
-      <div id="attach-menu" class="hidden absolute bottom-16 sm:bottom-20 right-14 sm:right-44 bg-[#020c04] border-2 border-[#00ff41] rounded-xl p-2 space-y-1.5 z-40 glow-box w-48 text-xs">
+      <div id="attach-menu" class="hidden absolute bottom-16 sm:bottom-20 right-10 sm:right-44 bg-[#020c04] border-2 border-[#00ff41] rounded-xl p-2 space-y-1.5 z-40 glow-box w-48 text-xs">
         <button type="button" onclick="closeAttachMenu(); triggerImageSelect();" class="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-[#001a07] hover:bg-[#00ff41] hover:text-black font-bold transition">
           <span>🖼️ SEND PICTURE</span>
           <span class="text-[10px] opacity-75">[PIC]</span>
@@ -541,50 +541,47 @@
       </div>
 
       <!-- Rounded Pill Message Bar -->
-      <form id="chat-form" onsubmit="handleFormSubmit(event)" class="max-w-4xl mx-auto flex items-center space-x-1.5 sm:space-x-2.5 bg-[#010d04]/95 border-2 border-[#00ff41]/80 rounded-full px-3 sm:px-5 py-2 sm:py-2.5 glow-box">
-        <span id="prompt-prefix" class="text-[#00ff41] font-bold text-sm sm:text-base shrink-0 select-none">[&gt;]</span>
+      <form id="chat-form" onsubmit="handleFormSubmit(event)" class="max-w-4xl mx-auto flex items-center space-x-1 sm:space-x-2.5 bg-[#010d04]/95 border-2 border-[#00ff41]/80 rounded-full px-2.5 sm:px-5 py-2 sm:py-2.5 glow-box">
+        <span id="prompt-prefix" class="text-[#00ff41] font-bold text-xs sm:text-base shrink-0 select-none">[&gt;]</span>
         <div class="relative flex-1 flex items-center min-w-0">
           <input
             id="terminal-input"
             type="text"
             autocomplete="off"
             spellcheck="false"
-            placeholder="Message box // Type message or /help..."
+            placeholder="Message or /help..."
             class="w-full bg-transparent text-[#00ff41] focus:outline-none font-mono text-base sm:text-base pr-1"
           />
         </div>
 
-        <!-- Combined [+ ATTACH] Button: Compact [＋] on phones, [+ ATTACH] on laptops -->
+        <!-- Combined [+ ATTACH] Button: Always visibly labeled "+ ATTACH" -->
         <button
           id="attach-btn"
           type="button"
           onclick="toggleAttachMenu(event)"
           title="Attach Picture or Encrypted File Packet"
-          class="px-2.5 sm:px-3 py-1 rounded-full border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-xs tracking-wider transition shrink-0"
+          class="px-2 sm:px-3 py-1 rounded-full border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-[11px] sm:text-xs tracking-wider transition shrink-0"
         >
-          <span class="sm:hidden">＋</span>
-          <span class="hidden sm:inline">+ ATTACH</span>
+          + ATTACH
         </button>
 
-        <!-- Voice Button: Compact [🎙️] on phones, [🎙️ VOICE] on laptops -->
+        <!-- Voice Button: Always visibly labeled "🎙️ VOICE" -->
         <button
           id="voice-btn"
           type="button"
           onclick="toggleVoiceRecording()"
           title="Record & Send a Voice Note (Uses active Voice FX)"
-          class="px-2.5 sm:px-3 py-1 rounded-full border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-xs tracking-wider transition shrink-0"
+          class="px-2 sm:px-3 py-1 rounded-full border subtle-border bg-[#001c08] hover:bg-[#00ff41] hover:text-black font-bold text-[11px] sm:text-xs tracking-wider transition shrink-0"
         >
-          <span id="voice-btn-mobile" class="sm:hidden">🎙️</span>
-          <span id="voice-btn-desktop" class="hidden sm:inline">🎙️ VOICE</span>
+          <span id="voice-btn-label">🎙️ VOICE</span>
         </button>
 
-        <!-- Send Button: Compact [⏎] on phones, [SEND ⏎] on laptops -->
+        <!-- Send Button: Always visibly labeled "SEND ⏎" -->
         <button
           type="submit"
-          class="px-3 sm:px-5 py-1 rounded-full border border-[#00ff41] bg-[#002e10] hover:bg-[#00ff41] hover:text-black font-bold text-xs sm:text-sm tracking-wider transition shrink-0 glow-box"
+          class="px-2.5 sm:px-5 py-1 rounded-full border border-[#00ff41] bg-[#002e10] hover:bg-[#00ff41] hover:text-black font-bold text-[11px] sm:text-sm tracking-wider transition shrink-0 glow-box"
         >
-          <span class="sm:hidden">⏎</span>
-          <span class="hidden sm:inline">SEND ⏎</span>
+          SEND ⏎
         </button>
       </form>
     </footer>
@@ -3735,10 +3732,8 @@
 
         document.getElementById('voice-rec-bar').classList.remove('hidden');
         const voiceBtn = document.getElementById('voice-btn');
-        const voiceBtnMob = document.getElementById('voice-btn-mobile');
-        const voiceBtnDesk = document.getElementById('voice-btn-desktop');
-        if (voiceBtnMob) voiceBtnMob.textContent = '⏹️';
-        if (voiceBtnDesk) voiceBtnDesk.textContent = 'STOP & SEND';
+        const voiceBtnLabel = document.getElementById('voice-btn-label');
+        if (voiceBtnLabel) voiceBtnLabel.textContent = '⏹️ STOP';
         voiceBtn.classList.add('border-red-500', 'bg-red-950/60', 'text-red-300');
 
         const timerEl = document.getElementById('voice-timer');
@@ -3766,10 +3761,8 @@
 
       document.getElementById('voice-rec-bar').classList.add('hidden');
       const voiceBtn = document.getElementById('voice-btn');
-      const voiceBtnMob = document.getElementById('voice-btn-mobile');
-      const voiceBtnDesk = document.getElementById('voice-btn-desktop');
-      if (voiceBtnMob) voiceBtnMob.textContent = '🎙️';
-      if (voiceBtnDesk) voiceBtnDesk.textContent = '🎙️ VOICE';
+      const voiceBtnLabel = document.getElementById('voice-btn-label');
+      if (voiceBtnLabel) voiceBtnLabel.textContent = '🎙️ VOICE';
       voiceBtn.classList.remove('border-red-500', 'bg-red-950/60', 'text-red-300');
 
       try {
